@@ -1,6 +1,10 @@
 package client
 
 import (
+	"fmt"
+	"os"
+	"time"
+
 	"github.com/Shopify/sarama"
 	"github.com/Sirupsen/logrus"
 )
@@ -36,6 +40,16 @@ func NewClient(brokers []string, secret string, topic string, groupID string) (*
 		secret: secret, topic: topic,
 		producer: producer, consumer: consumer, offsetManager: offsetManager,
 	}, nil
+}
+
+// NewClientFromEnv creates a new qli client using environment variables
+// to configure the brokers, the topic and the secret
+func NewClientFromEnv() (*Qlient, error) {
+	brokers := []string{os.Getenv("B")}
+	topic := os.Getenv("T")
+	secret := os.Getenv("K")
+	groupID := fmt.Sprintf("group-%s-%d", topic, time.Now().UnixNano())
+	return NewClient(brokers, secret, topic, groupID)
 }
 
 // Close closes the qli client

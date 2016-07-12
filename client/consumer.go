@@ -119,5 +119,7 @@ func (q *Qlient) closeConsumer() {
 			log.WithError(err).Error("Fail to close offset manager")
 		}
 	}
-	close(q.sub)
+	if q.sub != nil {
+		close(q.sub)
+	}
 }

@@ -45,8 +45,8 @@ func (q *Qlient) Pub() chan string {
 }
 
 // Send produces one message
-func (q *Qlient) Send(value string) {
-	partition, offset, err := q.producer.SendMessage(&sarama.ProducerMessage{
+func (q *Qlient) Send(value string) (partition int32, offset int64, err error) {
+	partition, offset, err = q.producer.SendMessage(&sarama.ProducerMessage{
 		Topic: q.topic,
 		Value: sarama.StringEncoder(value),
 	})
@@ -60,6 +60,8 @@ func (q *Qlient) Send(value string) {
 		"value":     value,
 		"topic":     q.topic,
 	}).Debug("Produce successful")
+
+	return partition, offset, err
 }
 
 func (q *Qlient) closeProducer() {
