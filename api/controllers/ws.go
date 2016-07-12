@@ -39,18 +39,17 @@ func (t *WsCtrl) RawStream(c *gin.Context) {
 
 	roomOut := qli.Sub()
 
+	c.Status(200)
+
 	go func() {
 		for {
 			m := <-roomOut
-
-			log.Info(m)
-
-			c.String(200, m)
-			/*_, err := ws.Write([]byte(m))
+			_, err := c.Writer.Write([]byte(m + "\n"))
 			if err != nil {
 				log.WithError(err).Error("Sending message from qaas to ws")
 				break
-			}*/
+			}
+			c.Writer.Flush()
 		}
 	}()
 
