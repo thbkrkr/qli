@@ -3,20 +3,29 @@ package client
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
+	"github.com/bsm/sarama-cluster"
 )
 
 // Qlient represents a qli client
 type Qlient struct {
-	secret string
-	topic  string
+	brokers  []string
+	clientID string
+	topic    string
 
 	producer      sarama.SyncProducer
-	consumer      sarama.Consumer
-	offsetManager sarama.OffsetManager
+	asyncProducer sarama.AsyncProducer
+
+	consumer *cluster.Consumer
+
+	client          sarama.Client
+	consumer082     sarama.Consumer
+	consumerGroupID string
+	offsetManager   sarama.OffsetManager
 
 	pub chan string
 	sub chan string
@@ -29,16 +38,13 @@ func NewClient(brokers []string, secret string, topic string, groupID string) (*
 		return nil, err
 	}
 
-	consumer, offsetManager, err := newConsumer(brokers, secret, topic, groupID)
-	if err != nil {
-		return nil, err
-	}
-
-	logrus.Debug("Qli client started")
+	//log.SetLevel(log.DebugLevel)
 
 	return &Qlient{
-		secret: secret, topic: topic,
-		producer: producer, consumer: consumer, offsetManager: offsetManager,
+		brokers:  brokers,
+		clientID: secret, topic: topic,
+		producer:        producer,
+		consumerGroupID: groupID,
 	}, nil
 }
 
@@ -48,12 +54,32 @@ func NewClientFromEnv() (*Qlient, error) {
 	brokers := []string{os.Getenv("B")}
 	topic := os.Getenv("T")
 	secret := os.Getenv("K")
-	groupID := fmt.Sprintf("group-%s-%d", topic, time.Now().UnixNano())
+	groupID := fmt.Sprintf("qli-%s-%d", topic, time.Now().UnixNano())
 	return NewClient(brokers, secret, topic, groupID)
 }
 
 // Close closes the qli client
 func (c *Qlient) Close() {
-	c.closeProducer()
-	c.closeConsumer()
+	log.Debug("Close qli")
+	if c.producer != nil {
+		c.closeProducer()
+	}
+	if c.consumer != nil {
+		c.closeConsumer()
+	}
+	if c.consumer082 != nil {
+		c.closeConsumer082()
+	}
+}
+
+func (c *Qlient) CloseOnSig() {
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, os.Interrupt)
+	//syscall.SIGHUP,
+	//syscall.SIGINT,
+	//syscall.SIGTERM,
+	//syscall.SIGQUIT)
+
+	<-sigc
+	c.Close()
 }

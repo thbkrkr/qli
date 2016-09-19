@@ -2,7 +2,7 @@ deps:
 	govendor update +external
 
 dev:
-	go run api.go -b $(BROKER) -k ${KEY} -t ${TOPIC}
+	go run api.go -b $(B) -k ${K} -t ${T}
 
 build: build-binary
 	doo b
@@ -15,7 +15,7 @@ build-binary:
 		-e CGO_ENABLED=0 \
 		-e GOPATH=/go \
 		-w /go/src/github.com/thbkrkr/qli/api \
-			golang:1.6.2-alpine \
+			golang:1.7.1 \
 				sh -c "go build -o qli-api"
 
 run:

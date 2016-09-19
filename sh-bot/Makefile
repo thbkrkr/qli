@@ -7,15 +7,15 @@ build: build-binary
 build-binary:
 	docker run --rm \
 		--name sh-bot-build \
-		-v $$(pwd)/../..:/go/src/github.com/thbkrkr/qli \
+		-v $$(pwd)/..:/go/src/github.com/thbkrkr/qli \
 		-e GOBIN=/go/bin/ \
 		-e CGO_ENABLED=0 \
 		-e GOPATH=/go \
-		-w /go/src/github.com/thbkrkr/qli/example/sh-bot \
-			golang:1.6.2 go build
+		-w /go/src/github.com/thbkrkr/qli/sh-bot \
+			golang:1.7.1 go build
 
 drun:
-	doo b \
-		-e B=${B} -e K=${K} -e ${T}
+	doo d \
+		-e B=${B} -e K=${K} -e ${T} \
 		-p 80:4242 \
 		krkr/sh-bot

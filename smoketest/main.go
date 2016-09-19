@@ -18,7 +18,7 @@ var (
 	key    = p("k", "", "Key")
 	topic  = p("t", "", "Topic")
 
-	name = p("n", fmt.Sprintf("qing/%d", rand.Intn(666)), "name")
+	name = p("n", fmt.Sprintf("qing-%d", rand.Intn(666)), "name")
 )
 
 var totalMessages = 3
@@ -35,10 +35,7 @@ func main() {
 		"topic":  *topic,
 	}).Infof("Start smoketest: produce and consume %d messages", totalMessages)
 
-	now := unixTimestamp()
-	s := rand.NewSource(now)
-	r := rand.New(s)
-	randNum := r.Int63n(10000000)
+	randNum := rand.New(rand.NewSource(unixTimestamp())).Int63n(10000000)
 
 	go func() {
 		consume(qli, done, randNum)
@@ -47,17 +44,7 @@ func main() {
 	time.Sleep(time.Duration(1) * time.Second)
 
 	for i := 0; i < totalMessages; i++ {
-		test := Test{
-			Id:        i,
-			Timestamp: now,
-			RandNum:   randNum,
-		}
-		bmsg, err := json.Marshal(test)
-		handlErr(err, "Fail to marshal Test struct")
-
-		msg := string(bmsg)
-		qli.Send(msg)
-		logrus.WithField("msg", msg).Info("Produce")
+		produce(qli, randNum)
 	}
 
 	<-done
@@ -67,12 +54,25 @@ func main() {
 }
 
 type Test struct {
-	Id        int
 	Timestamp int64
 	RandNum   int64
 }
 
-func consume(qli *client.Qlient, done chan bool, refRandNum int64) {
+func produce(qli *client.Qlient, randNum int64) {
+	test := Test{
+		Timestamp: unixTimestamp(),
+		RandNum:   randNum,
+	}
+	bmsg, err := json.Marshal(test)
+	handlErr(err, "Fail to marshal Test struct")
+
+	msg := string(bmsg)
+	qli.Send(msg)
+	logrus.WithField("msg", msg).Info("Produce")
+	//time.Sleep(time.Microsecond * 1)
+}
+
+func consume(qli *client.Qlient, done chan bool, randNum int64) {
 	count := 0
 	for msg := range qli.Sub() {
 
@@ -82,10 +82,9 @@ func consume(qli *client.Qlient, done chan bool, refRandNum int64) {
 
 		logrus.Infof("%v", test)
 
-		isOk := test.RandNum == refRandNum
+		isOk := test.RandNum == randNum
 
 		logrus.WithFields(logrus.Fields{
-			"id":      test.Id,
 			"isOk":    isOk,
 			"randNum": test.RandNum,
 			"diff":    unixTimestamp() - test.Timestamp,

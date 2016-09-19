@@ -4,12 +4,13 @@ services:
   qli_api:
     container_name: qli-api
     image: krkr/qli-api
-    env_file: .qli.env
     ports:
       - 90:4242
+    environmnent:
+      - B
+      - K
+      - T
     labels:
       - "traefik.port=4242"
       - "traefik.backend=q"
-      - "traefik.frontend.rule=Host:$domain"
-    command:
-      -b $B -k $K -t $T
+      - "traefik.frontend.rule=Host:$DOMAIN"

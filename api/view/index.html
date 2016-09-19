@@ -144,7 +144,7 @@ users = [
 ]
 
 function avatar(user) {
-  if (user.indexOf('bot') != -1) {
+  if (user && user.indexOf('bot') != -1) {
     return '/0/img/bot.png'
   } else {
     userId = user.split('-')[1]

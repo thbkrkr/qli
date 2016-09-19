@@ -16,6 +16,7 @@ type Bot struct {
 	name     string
 	commands map[string]command
 
+	qli *client.Qlient
 	pub chan<- string
 	sub <-chan string
 }
@@ -23,11 +24,7 @@ type Bot struct {
 type command func(...string) string
 
 func NewBot(name string) *Bot {
-	broker := env("B")
-	secret := env("K")
-	topic := env("T")
-
-	qli, err := client.NewClient([]string{broker}, secret, topic, "bot-"+name)
+	qli, err := client.NewClientFromEnv()
 	if err != nil {
 		log.Error("Fail to create qli bot client")
 		os.Exit(1)
@@ -38,6 +35,7 @@ func NewBot(name string) *Bot {
 	bot := &Bot{
 		name:     fmt.Sprintf("%s-%s-%d", name, hostname, rand.Intn(100)),
 		commands: map[string]command{},
+		qli:      qli,
 		pub:      qli.Pub(),
 		sub:      qli.Sub(),
 	}
@@ -62,9 +60,7 @@ func (b *Bot) Start() {
 
 		commandFunc := b.commands[name]
 
-		log.Warnf("command: %v", name)
-		log.Warnf("commandFunc: %v", commandFunc)
-		log.Warnf("b.commands: %v", b.commands)
+		log.Infof("command: %v", name)
 
 		if message.User != b.name && commandFunc != nil {
 			// TODO: handle error
@@ -74,6 +70,7 @@ func (b *Bot) Start() {
 	}
 
 	waitSig()
+	b.qli.Close()
 }
 
 // Command registrations
@@ -102,7 +99,7 @@ func (b *Bot) RegisterScript(name string, scriptPath string, args ...string) *Bo
 	b.commands[name] = func(args ...string) string {
 		stdout, err := exec.Command(scriptPath, args...).Output()
 		if err != nil {
-			log.Fatal("err: ", err)
+			log.Warn("err: ", err)
 		}
 		return string(stdout)
 	}

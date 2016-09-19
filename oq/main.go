@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/thbkrkr/qli/client"
 )
@@ -31,18 +33,32 @@ func main() {
 	qli, err := client.NewClient(strings.Split(*broker, ","), *key, *topic, strings.Split(*key, "-")[0])
 	handlErr(err, "Fail to create qli client")
 
-	// Receive mode
+	// Nothing in stdin
 	if (stat.Mode() & os.ModeCharDevice) != 0 {
+		go func() {
+			sigc := make(chan os.Signal, 1)
+			signal.Notify(sigc,
+				syscall.SIGHUP,
+				syscall.SIGINT,
+				syscall.SIGTERM,
+				syscall.SIGQUIT)
+
+			<-sigc
+			qli.Close()
+		}()
+
+		// Consume
 		for msg := range qli.Sub() {
 			if msg == "-1" {
 				continue
 			}
 			fmt.Println(msg)
 		}
+
 		return
 	}
 
-	// Produce mode
+	// or Produce stdin
 	in, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		handlErr(err, "Fail to read stdin")
@@ -50,7 +66,10 @@ func main() {
 	if len(in) == 0 {
 		handlErr(errors.New("Stdin length equals 0"), "Nothing to send")
 	}
+
 	qli.Send(string(in))
+
+	qli.Close()
 }
 
 // --

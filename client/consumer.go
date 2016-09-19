@@ -1,87 +1,56 @@
 package client
 
 import (
-	"sync"
-
 	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
+	"github.com/bsm/sarama-cluster"
 )
 
-func newConsumer(brokers []string, secret string, topic string, groupID string) (sarama.Consumer, sarama.OffsetManager, error) {
-	consumerGroupID := "group" + "-" + topic + "-" + groupID
+var consumer *cluster.Consumer
 
-	saramaConfig := sarama.NewConfig()
-	saramaConfig.ClientID = secret
+func (q *Qlient) newConsumer() (*cluster.Consumer, error) {
+	clusterConfig := cluster.NewConfig()
+	clusterConfig.ClientID = q.clientID
+	clusterConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
+	clusterConfig.Consumer.Return.Errors = true
+	clusterConfig.Group.Return.Notifications = true
+	clusterConfig.Version = sarama.V0_10_0_0
 
-	client, err := sarama.NewClient(brokers, saramaConfig)
+	var err error
+	consumer, err = cluster.NewConsumer(q.brokers, q.consumerGroupID, []string{q.topic}, clusterConfig)
 	if err != nil {
-		log.WithError(err).Error("Fail to create client")
+		return nil, err
 	}
 
-	consumer, err := sarama.NewConsumerFromClient(client)
-	if err != nil {
-		log.WithError(err).Error("Fail to create consumer")
-	}
-
-	offsetManager, err := sarama.NewOffsetManagerFromClient(consumerGroupID, client)
-	if err != nil {
-		log.WithError(err).Error("Fail to create offset manager")
-	}
-
-	return consumer, offsetManager, nil
+	return consumer, nil
 }
 
-// Receive receives one message
-/*func (q *Qlient) Receive() string {
-	return "TODO"
-}*/
-
-// Sub returns a channel to receive messages
 func (q *Qlient) Sub() chan string {
-	q.sub = make(chan string)
-
-	partitions, err := q.consumer.Partitions(q.topic)
+	consumer, err := q.newConsumer()
 	if err != nil {
-		log.WithError(err).Error("Fail to get partitions")
+		log.WithError(err).Error("Failed to create consumer")
+		return nil
 	}
+	q.consumer = consumer
 
-	// Consume all topic partitions
-	wg := sync.WaitGroup{}
-	for _, p := range partitions {
-		wg.Add(1)
-		go func(p int32) {
-			consumePartition(q.sub, q.consumer, q.topic, p, q.offsetManager)
-		}(p)
-	}
+	go func() {
+		for err := range q.consumer.Errors() {
+			log.WithError(err).Error("Failed to consume")
+		}
+	}()
+	go func() {
+		for note := range q.consumer.Notifications() {
+			log.WithField("note", note).Debug("Consumer notification")
+		}
+	}()
 
-	return q.sub
-}
+	log.Debug("Start to consume topic " + q.topic)
 
-func consumePartition(sub chan string, consumer sarama.Consumer, topic string, partition int32, offsetManager sarama.OffsetManager) {
-	partitionOffsetManager, err := offsetManager.ManagePartition(topic, partition)
-	if err != nil {
-		log.WithError(err).Error("Fail to manage partition")
-	}
-	defer partitionOffsetManager.AsyncClose()
-
-	offset, metadata := partitionOffsetManager.NextOffset()
-
-	partitionConsumer, err := consumer.ConsumePartition(topic, partition, offset)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer partitionConsumer.AsyncClose()
-
-	log.WithFields(log.Fields{
-		"topic":     topic,
-		"partition": partition,
-		"offset":    offset,
-	}).Debug("Consume partition")
-
-	for {
-		select {
-		case msg := <-partitionConsumer.Messages():
+	sub := make(chan string)
+	go func() {
+		for msg := range q.consumer.Messages() {
 			value := string(msg.Value)
+			q.consumer.MarkOffset(msg, "qli")
 
 			// Write message consumed in the sub channel
 			sub <- value
@@ -92,31 +61,17 @@ func consumePartition(sub chan string, consumer sarama.Consumer, topic string, p
 				"value":     value,
 				"topic":     msg.Topic,
 			}).Debug("Consume successful")
-
-			partitionOffsetManager.MarkOffset(msg.Offset, metadata)
-
-		case err := <-partitionConsumer.Errors():
-			if err != nil {
-				log.WithError(err).Error("Consume error")
-			}
-
-		case offsetErr := <-partitionOffsetManager.Errors():
-			if offsetErr != nil {
-				log.WithError(offsetErr).Error("Offset error")
-			}
 		}
-	}
+	}()
+
+	q.sub = sub
+	return sub
 }
 
 func (q *Qlient) closeConsumer() {
 	if q.consumer != nil {
 		if err := q.consumer.Close(); err != nil {
 			log.WithError(err).Error("Fail to close consumer")
-		}
-	}
-	if q.offsetManager != nil {
-		if err := q.offsetManager.Close(); err != nil {
-			log.WithError(err).Error("Fail to close offset manager")
 		}
 	}
 	if q.sub != nil {

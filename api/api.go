@@ -26,8 +26,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
-	// TODO: add timeout to client
-	cli, err := client.NewClient(strings.Split(*brokers, ","), *key, *topic, "qli-api")
+	qli, err := client.NewClient(strings.Split(*brokers, ","), *key, *topic, "qli-api")
 	if err != nil {
 		log.Error("Fail to create qli client")
 		os.Exit(1)
@@ -43,17 +42,17 @@ func main() {
 	r.POST("/send", func(c *gin.Context) {
 		bytes, _ := ioutil.ReadAll(c.Request.Body)
 		data := string(bytes)
-		cli.Send(string(data))
+		qli.Send(string(data))
 
 		c.JSON(200, gin.H{"produced": data})
 	})
 
 	http := controllers.HttpCtrl{Brokers: *brokers}
-	r.POST("produce/topic/:topic", http.Produce)
+	r.POST("/produce/topic/:topic", http.Produce)
 	r.GET("/consume/topic/:topic", http.Consume)
 
 	/*r.GET("/receive", func(c *gin.Context) {
-		data := cli.Receive()
+		data := qli.Receive()
 		c.JSON(200, gin.H{"data": data})
 	})*/
 
@@ -64,6 +63,8 @@ func main() {
 		handler := websocket.Handler(ws.Consume)
 		handler.ServeHTTP(c.Writer, c.Request)
 	})
+
+	go qli.CloseOnSig()
 
 	log.WithField("port", 4242).Info("Start qli-ws")
 	r.Run(":4242")

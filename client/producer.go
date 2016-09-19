@@ -17,6 +17,18 @@ func newProducer(brokers []string, secret string) (sarama.SyncProducer, error) {
 	return producer, nil
 }
 
+func newAsyncProducer(brokers []string, secret string) (sarama.AsyncProducer, error) {
+	saramaConfig := sarama.NewConfig()
+	saramaConfig.ClientID = secret
+
+	producer, err := sarama.NewAsyncProducer(brokers, saramaConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return producer, nil
+}
+
 // Pub returns a channel to publish messages
 func (q *Qlient) Pub() chan string {
 	q.pub = make(chan string)
@@ -24,10 +36,15 @@ func (q *Qlient) Pub() chan string {
 	// Listen pub and send all
 	go func() {
 		for value := range q.pub {
-			partition, offset, err := q.producer.SendMessage(&sarama.ProducerMessage{
+
+			msg := sarama.ProducerMessage{
 				Topic: q.topic,
 				Value: sarama.StringEncoder(value),
-			})
+			}
+
+			//q.producer.Input() <- &msg
+
+			partition, offset, err := q.producer.SendMessage(&msg)
 			if err != nil {
 				log.WithError(err).Error("Fail to produce")
 			}
@@ -46,10 +63,19 @@ func (q *Qlient) Pub() chan string {
 
 // Send produces one message
 func (q *Qlient) Send(value string) (partition int32, offset int64, err error) {
-	partition, offset, err = q.producer.SendMessage(&sarama.ProducerMessage{
+	return q.Send2(q.topic, value)
+}
+
+func (q *Qlient) Send2(topic string, value string) (partition int32, offset int64, err error) {
+
+	msg := sarama.ProducerMessage{
 		Topic: q.topic,
 		Value: sarama.StringEncoder(value),
-	})
+	}
+
+	//q.producer.Input() <- &msg
+
+	partition, offset, err = q.producer.SendMessage(&msg)
 	if err != nil {
 		log.WithError(err).Error("Fail to produce")
 	}
@@ -62,6 +88,7 @@ func (q *Qlient) Send(value string) (partition int32, offset int64, err error) {
 	}).Debug("Produce successful")
 
 	return partition, offset, err
+	//return 0, 0, nil
 }
 
 func (q *Qlient) closeProducer() {

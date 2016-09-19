@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func (t *WsCtrl) RawStream(c *gin.Context) {
 			m := <-roomOut
 			_, err := c.Writer.Write([]byte(m + "\n"))
 			if err != nil {
-				log.WithError(err).Error("Sending message from qaas to ws")
+				log.WithError(err).Error("Sending message from the queue to ws")
 				break
 			}
 			c.Writer.Flush()
@@ -106,7 +107,13 @@ func (c *WsCtrl) Consume(ws *websocket.Conn) {
 			m := <-roomOut
 
 			if err := websocket.JSON.Send(ws, m); err != nil {
+				qli.Close()
+				if strings.Contains(err.Error(), "write: broken pipe") ||
+					err == io.EOF {
+					break
+				}
 				log.WithError(err).Error("Sending message to ws received from qaas")
+				qli.Close()
 				break
 			}
 
