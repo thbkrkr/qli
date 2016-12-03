@@ -41,9 +41,36 @@
 
 </div>
 
-<script src="https://thbkrkr.github.io/s.js/dist/s.5.f1202eb.js"></script><script>
+<script src="https://thbkrkr.github.io/s.js/dist/s.7.f5b592a.zm.js"></script>
+<script>
 
 // WS
+
+var messages = []
+var index = -1
+
+$(document).keydown(function(e) {
+    switch(e.which) {
+        case 38: // up
+        if (index == -1) {
+          break
+        }
+        index--;
+        $('#send').val(messages[index])
+        break
+
+        case 40: // down
+        if (index == messages.length) {
+          break
+        }
+        index++;
+        $('#send').val(messages[index])
+        break
+
+        default: return; // exit this handler for other keys
+    }
+    e.preventDefault(); // prevent the default action (scroll / move caret)
+});
 
 var ws
 var greet = false
@@ -63,12 +90,13 @@ function createWebSocket() {
     if (!greet) {
       greet = true
       msg = {user: user, message: "Hello!" }
-      ws.send(JSON.stringify({message: JSON.stringify(msg)}))
+      ws.send(JSON.stringify(msg))
       $('.comments').append(comment('hello-bot', '<i>Welcome ' + username(msg.user) + '!</i>'))
     }
   }
 
   ws.onmessage = function(event) {
+    console.log('event', JSON.parse(JSON.parse(event.data)))
     msg = JSON.parse(JSON.parse(event.data))
     $('.comments').append(comment(msg.user, msg.message))
     scrollToBottom($('.comments'), 100)
@@ -95,7 +123,9 @@ function say() {
   sendInput = $('#send')
   message = sendInput.val()
   msg = {user: user, message: message }
-  ws.send(JSON.stringify({message: JSON.stringify(msg)}))
+  ws.send(JSON.stringify(msg))
+  messages.push(message)
+  index = messages.length
   sendInput.val('')
 }
 

@@ -1,7 +1,6 @@
 FROM alpine:3.4
 
-RUN apk --update add bash curl && \
-    rm -f /var/cache/apk/*
+RUN apk --no-cache add bash curl jq
 
 COPY sh-bot /sh-bot
 

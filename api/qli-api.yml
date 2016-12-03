@@ -6,11 +6,8 @@ services:
     image: krkr/qli-api
     ports:
       - 90:4242
-    environmnent:
-      - B
-      - K
-      - T
     labels:
       - "traefik.port=4242"
       - "traefik.backend=q"
       - "traefik.frontend.rule=Host:$DOMAIN"
+    command: -b sbg.queue.ovh.net:9092 -k 2keaaacfskgu4-kqtTpMAFKrg8B8wpc4 -t thbkrkr.miaou

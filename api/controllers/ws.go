@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -15,30 +14,24 @@ import (
 )
 
 type WsCtrl struct {
-	Brokers string
-	Key     string
-	Topic   string
-	Verbose bool
+	Q *client.Qlient
 }
 
-type message struct {
-	Message string `json:"message"`
-}
-
-type msg struct {
+type Message struct {
 	User    string `json:"user"`
 	Message string `json:"message"`
 }
 
-func (t *WsCtrl) RawStream(c *gin.Context) {
-	consumerGroupID := "qli-ws" + fmt.Sprintf("%d", rand.Intn(100))
-	qli, err := client.NewClient(strings.Split(t.Brokers, ","), t.Key, t.Topic, consumerGroupID)
+func newQlient() (*client.Qlient, error) {
+	q, err := client.NewClientFromEnv(fmt.Sprintf("qli-ws-%d", time.Now().Unix()))
 	if err != nil {
-		// FIXME
-		return
+		ClientsWs.Mark(1)
 	}
+	return q, err
+}
 
-	roomOut := qli.Sub()
+func (ct *WsCtrl) RawStream(c *gin.Context) {
+	roomOut := ct.Q.Sub()
 
 	c.Status(200)
 
@@ -47,7 +40,7 @@ func (t *WsCtrl) RawStream(c *gin.Context) {
 			m := <-roomOut
 			_, err := c.Writer.Write([]byte(m + "\n"))
 			if err != nil {
-				log.WithError(err).Error("Sending message from the queue to ws")
+				log.WithError(err).Error("Fail to send ws message")
 				break
 			}
 			c.Writer.Flush()
@@ -57,68 +50,71 @@ func (t *WsCtrl) RawStream(c *gin.Context) {
 	select {}
 }
 
-func (c *WsCtrl) Consume(ws *websocket.Conn) {
-	consumerGroupID := "qli-ws" + fmt.Sprintf("%d", rand.Intn(100))
-	qli, err := client.NewClient(strings.Split(c.Brokers, ","), c.Key, c.Topic, consumerGroupID)
+func (ct *WsCtrl) Consume(ws *websocket.Conn) {
+	q, err := newQlient()
 	if err != nil {
-		// FIXME
+		log.WithError(err).Fatal("Fail to create qlient")
 		return
 	}
 
-	log.WithField("consumerGroupID", consumerGroupID).Info("New WS connection")
+	// Send each message received from the websocket to Kafka
 
-	// Send each message received from the websocket
-
-	roomIn := qli.Pub()
+	kafkaPub, err := q.Pub()
+	if err != nil {
+		log.WithError(err).Fatal("Fail to create qlient")
+		return
+	}
 
 	go func() {
 		for {
-			var m message
+			var msg Message
 
-			if err := websocket.JSON.Receive(ws, &m); err != nil {
-				log.WithError(err).Error("Sending message to qaas received from ws")
+			if err := websocket.JSON.Receive(ws, &msg); err != nil {
+				log.WithError(err).Error("Fail to receive ws json message")
 				break
 			}
 
-			log.WithField("message", m.Message).WithField("consumerGroupID", consumerGroupID).
-				Debug("Send message to qaas received from ws")
+			WsMsgIn.Mark(1)
 
-			roomIn <- m.Message
-
-			var cm msg
-			if err := json.Unmarshal([]byte(m.Message), &cm); err != nil {
-				log.WithError(err).WithField("data", m.Message).Error("Fail to unmarshal JSON")
+			bytes, err := json.Marshal(msg)
+			if err != nil {
+				log.WithError(err).WithField("message", msg).Error("Fail to marshal JSON")
 			}
+
+			kafkaPub <- string(bytes)
+
+			KafkaMsgIn.Mark(1)
 
 			now := fmt.Sprintf("%s", time.Now())
 			switch {
-			case cm.Message == "ping":
-				roomIn <- `{"user": "qliws-bot", "message":"pong >` + now + `"}`
+			case msg.Message == "ping":
+				kafkaPub <- `{"user": "qliws-bot", "message":"pong >` + now + `"}`
 			}
 		}
 	}()
 
-	// Send each message received from kafka to the websocket
+	// Send each message received from Kafka to the websocket
 
-	roomOut := qli.Sub()
+	kafkaSub := q.Sub()
 
 	go func() {
 		for {
-			m := <-roomOut
+			m := <-kafkaSub
+
+			KafkaMsgOut.Mark(1)
 
 			if err := websocket.JSON.Send(ws, m); err != nil {
-				qli.Close()
+				q.Close()
 				if strings.Contains(err.Error(), "write: broken pipe") ||
 					err == io.EOF {
 					break
 				}
-				log.WithError(err).Error("Sending message to ws received from qaas")
-				qli.Close()
+				log.WithError(err).Error("Sending message to ws received from kafka")
 				break
 			}
 
-			log.WithField("message", m).WithField("consumerGroupID", consumerGroupID).
-				Debug("Send message to ws received from qaas")
+			WsMsgOut.Mark(1)
+
 		}
 	}()
 

@@ -2,17 +2,12 @@ package controllers
 
 import (
 	"io/ioutil"
-	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/thbkrkr/qli/client"
 )
-
-type HttpCtrl struct {
-	Brokers string
-}
 
 var (
 	sessions = map[string]*Session{}
@@ -47,7 +42,7 @@ func init() {
 }
 */
 
-func (h *HttpCtrl) Produce(c *gin.Context) {
+func Produce(c *gin.Context) {
 	topic := c.Param("topic")
 	key := c.Request.Header.Get("X-Auth-Key")
 
@@ -59,7 +54,7 @@ func (h *HttpCtrl) Produce(c *gin.Context) {
 		return
 	}
 
-	q, err := h.qli(key, topic)
+	q, err := qlientPerTopic(key, topic)
 	if err != nil {
 		c.JSON(400, gin.H{"message": err.Error()})
 		return
@@ -79,11 +74,11 @@ func (h *HttpCtrl) Produce(c *gin.Context) {
 	c.JSON(200, gin.H{"partition": partition, "offset": offset})
 }
 
-func (h *HttpCtrl) Consume(c *gin.Context) {
+func Consume(c *gin.Context) {
 	topic := c.Param("topic")
 	key := c.Request.Header.Get("X-Auth-Key")
 
-	q, err := h.qli(key, topic)
+	q, err := qlientPerTopic(key, topic)
 	if err != nil {
 		c.JSON(400, gin.H{"message": err.Error()})
 		return
@@ -108,13 +103,16 @@ func (h *HttpCtrl) Consume(c *gin.Context) {
 	c.JSON(200, obj)
 }
 
-func (h *HttpCtrl) qli(key string, topic string) (*client.Qlient, error) {
+func qlientPerTopic(key string, topic string) (*client.Qlient, error) {
 	//mtx.RLock()
 	session := sessions[topic]
 	//mtx.RUnlock()
 
 	if session == nil {
-		newQlient, err := client.NewClient(strings.Split(h.Brokers, ","), key, topic, "qli-http-api")
+		newQlient, err := client.NewClientFromEnv("qli-http")
+
+		ClientsHttp.Mark(1)
+
 		if err != nil {
 			return nil, err
 		}

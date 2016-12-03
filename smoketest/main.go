@@ -13,14 +13,6 @@ import (
 	"github.com/thbkrkr/qli/client"
 )
 
-var (
-	broker = p("b", "", "Broker")
-	key    = p("k", "", "Key")
-	topic  = p("t", "", "Topic")
-
-	name = p("n", fmt.Sprintf("qing-%d", rand.Intn(666)), "name")
-)
-
 var totalMessages = 3
 
 func main() {
@@ -28,29 +20,33 @@ func main() {
 
 	done := make(chan bool)
 
-	qli, err := client.NewClient(strings.Split(*broker, ","), *key, *topic, *name)
-	handlErr(err, fmt.Sprintf("Fail to create qli client on %s", *broker))
+	c, err := client.NewConfigFromEnv(fmt.Sprintf("qing-%d", rand.Intn(666)))
+	handlErr(err, fmt.Sprintf("Fail to create qli client"))
+
+	q, err := client.NewClient(c)
+	handlErr(err, fmt.Sprintf("Fail to create qli client"))
+
 	logrus.WithFields(logrus.Fields{
-		"broker": *broker,
-		"topic":  *topic,
+		"broker": c.Broker,
+		"topic":  c.Topic,
 	}).Infof("Start smoketest: produce and consume %d messages", totalMessages)
 
 	randNum := rand.New(rand.NewSource(unixTimestamp())).Int63n(10000000)
 
 	go func() {
-		consume(qli, done, randNum)
+		consume(q, done, randNum)
 	}()
 
 	time.Sleep(time.Duration(1) * time.Second)
 
 	for i := 0; i < totalMessages; i++ {
-		produce(qli, randNum)
+		produce(q, randNum)
 	}
 
 	<-done
 
 	logrus.Info("Close")
-	qli.Close()
+	q.Close()
 }
 
 type Test struct {
@@ -69,7 +65,6 @@ func produce(qli *client.Qlient, randNum int64) {
 	msg := string(bmsg)
 	qli.Send(msg)
 	logrus.WithField("msg", msg).Info("Produce")
-	//time.Sleep(time.Microsecond * 1)
 }
 
 func consume(qli *client.Qlient, done chan bool, randNum int64) {

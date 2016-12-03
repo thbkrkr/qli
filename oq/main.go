@@ -1,57 +1,40 @@
 package main
 
 import (
-	"errors"
+	"bufio"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
-	"os/signal"
-	"strings"
-	"syscall"
+	"time"
 
 	"github.com/thbkrkr/qli/client"
 )
 
-var (
-	broker = p("b", "", "Broker")
-	key    = p("k", "", "Key")
-	topic  = p("t", "", "Topic")
+var produceStream bool
 
-	name = p("n", fmt.Sprintf("oq/%d", rand.Intn(666)), "name")
-)
+func init() {
+	flag.BoolVar(&produceStream, "s", false, "Enable produce stream")
+	flag.Parse()
+}
 
 func main() {
-	load()
+	//logrus.SetLevel(logrus.DebugLevel)
+	hostname, _ := os.Hostname()
 
-	stat, err := os.Stdin.Stat()
-	if err != nil {
-		handlErr(err, "Fail to read stdin")
-	}
+	rand.Seed(time.Now().Unix())
 
-	qli, err := client.NewClient(strings.Split(*broker, ","), *key, *topic, strings.Split(*key, "-")[0])
+	q, err := client.NewClientFromEnv(fmt.Sprintf("%s-%s-%d.%d", "oq", hostname, time.Now().Unix(), rand.Intn(100)))
 	handlErr(err, "Fail to create qli client")
 
-	// Nothing in stdin
-	if (stat.Mode() & os.ModeCharDevice) != 0 {
-		go func() {
-			sigc := make(chan os.Signal, 1)
-			signal.Notify(sigc,
-				syscall.SIGHUP,
-				syscall.SIGINT,
-				syscall.SIGTERM,
-				syscall.SIGQUIT)
+	// Consume to stdout
 
-			<-sigc
-			qli.Close()
+	if nothingInStdin() {
+		go func() {
+			q.CloseOnSig()
 		}()
 
-		// Consume
-		for msg := range qli.Sub() {
-			if msg == "-1" {
-				continue
-			}
+		for msg := range q.Sub() {
 			fmt.Println(msg)
 		}
 
@@ -59,51 +42,53 @@ func main() {
 	}
 
 	// or Produce stdin
-	in, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		handlErr(err, "Fail to read stdin")
-	}
-	if len(in) == 0 {
-		handlErr(errors.New("Stdin length equals 0"), "Nothing to send")
+
+	go func() {
+		q.CloseOnSig()
+	}()
+
+	defer q.Recover()
+
+	stdin := bufio.NewScanner(os.Stdin)
+	stdin.Scan()
+	q.Send(stdin.Text())
+
+	if produceStream {
+		pub, err := q.AsyncPub()
+		handlErr(err, "Fail to create qli produce")
+
+		stdin := bufio.NewScanner(os.Stdin)
+		for stdin.Scan() {
+			pub <- stdin.Text()
+		}
+		if err := stdin.Err(); err != nil {
+			handlErr(err, "Fail to read stdin")
+		}
+
+	} else {
+		pub, err := q.Pub()
+		handlErr(err, "Fail to create qli produce")
+
+		stdin := bufio.NewScanner(os.Stdin)
+		for stdin.Scan() {
+			pub <- stdin.Text()
+		}
+		if err := stdin.Err(); err != nil {
+			handlErr(err, "Fail to read stdin")
+		}
 	}
 
-	qli.Send(string(in))
-
-	qli.Close()
 }
 
 // --
 
-var params = map[string]param{}
-
-type param struct {
-	shortname string
-	name      string
-
-	val *string
-}
-
-func p(shortname string, val string, name string) *string {
-	p := flag.String(shortname, val, name)
-	params[name] = param{shortname: shortname, name: name, val: p}
-	return p
-}
-
-func load() {
-	flag.Parse()
-
-	for _, param := range params {
-		envVarName := strings.ToUpper(param.shortname)
-		value := os.Getenv(envVarName)
-		if value != "" {
-			*param.val = value
-		}
-		if *param.val == "" {
-			fmt.Printf("Param '%s' required (flag %s or env var %s)\n", param.name, param.shortname, envVarName)
-			os.Exit(1)
-		}
+func nothingInStdin() bool {
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		handlErr(err, "Fail to read stdin")
 	}
 
+	return stat.Mode()&os.ModeCharDevice != 0
 }
 
 func handlErr(err error, context string) {

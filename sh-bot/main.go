@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,22 +10,19 @@ import (
 	qli "github.com/thbkrkr/qli/bot"
 )
 
-var (
-	name = flag.String("n", "sh-bot", "Bot name")
-)
-
 func main() {
-	flag.Parse()
-
 	name := os.Getenv("BOT_NAME")
 	if name == "" {
-		name = fmt.Printf("bot-%s-bot", time.Now())
+		name = fmt.Sprintf("bot-%s-bot", time.Now())
+	}
+	bot := qli.NewBot(name)
+
+	dir := "./cmd"
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		logrus.Fatal("Fail to read scripts directory " + dir)
 	}
 
-	bot := qli.NewBot(*name)
-	dir := "./cmd"
-
-	files, _ := ioutil.ReadDir(dir)
 	for _, f := range files {
 		name := f.Name()
 		logrus.Infof("Register command %s", name)

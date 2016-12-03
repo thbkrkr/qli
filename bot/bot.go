@@ -16,28 +16,31 @@ type Bot struct {
 	name     string
 	commands map[string]command
 
-	qli *client.Qlient
+	q   *client.Qlient
 	pub chan<- string
 	sub <-chan string
 }
 
 type command func(...string) string
 
+// NewBot creates a new bot given a name
 func NewBot(name string) *Bot {
-	qli, err := client.NewClientFromEnv()
+	q, err := client.NewClientFromEnv(name)
 	if err != nil {
-		log.Error("Fail to create qli bot client")
-		os.Exit(1)
+		fatalIf(err)
 	}
 
 	hostname, _ := os.Hostname()
 
+	pub, err := q.Pub()
+	fatalIf(err)
+
 	bot := &Bot{
 		name:     fmt.Sprintf("%s-%s-%d", name, hostname, rand.Intn(100)),
 		commands: map[string]command{},
-		qli:      qli,
-		pub:      qli.Pub(),
-		sub:      qli.Sub(),
+		q:        q,
+		pub:      pub,
+		sub:      q.Sub(),
 	}
 
 	log.Infof("Bot %s started", bot.name)
@@ -46,17 +49,27 @@ func NewBot(name string) *Bot {
 	return bot
 }
 
+func fatalIf(err error) {
+	log.Error("Fail to create qli bot client")
+	os.Exit(1)
+}
+
+// Start start a bot
 func (b *Bot) Start() {
 	log.Infof("Start bot %s", b.name)
+
+	go func() {
+		waitSig()
+		b.q.Close()
+	}()
 
 	b.pub <- b.say("Yo!")
 
 	for data := range b.sub {
 		message := unmarshal(data)
 
-		m := strings.Split(message.Message, " ")
-		name := m[0]
-		args := m[1:]
+		args := strings.Split(message.Message, " ")
+		name := args[0]
 
 		commandFunc := b.commands[name]
 
@@ -64,13 +77,11 @@ func (b *Bot) Start() {
 
 		if message.User != b.name && commandFunc != nil {
 			// TODO: handle error
-			result := commandFunc(args...)
-			b.pub <- b.say(message.Message + " > " + result)
+			result := commandFunc(args[1:]...)
+			b.pub <- b.say(result)
 		}
 	}
 
-	waitSig()
-	b.qli.Close()
 }
 
 // Command registrations
@@ -96,6 +107,7 @@ func (b *Bot) RegisterScript(name string, scriptPath string, args ...string) *Bo
 	if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
 		exitf("Script not found: %s", scriptPath)
 	}
+
 	b.commands[name] = func(args ...string) string {
 		stdout, err := exec.Command(scriptPath, args...).Output()
 		if err != nil {

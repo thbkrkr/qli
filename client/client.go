@@ -1,85 +1,129 @@
 package client
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"os/signal"
-	"time"
+	"strings"
 
 	"github.com/Shopify/sarama"
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/bsm/sarama-cluster"
+	"github.com/kelseyhightower/envconfig"
 )
 
-// Qlient represents a qli client
+// Qlient represents a qlient to produce and consume messages
 type Qlient struct {
-	brokers  []string
-	clientID string
-	topic    string
+	config *Config
 
-	producer      sarama.SyncProducer
+	syncProducer  sarama.SyncProducer
 	asyncProducer sarama.AsyncProducer
 
-	consumer *cluster.Consumer
-
-	client          sarama.Client
-	consumer082     sarama.Consumer
+	consumer        *cluster.Consumer
 	consumerGroupID string
-	offsetManager   sarama.OffsetManager
 
 	pub chan string
 	sub chan string
+	err chan error
+
+	IsClosed bool
 }
 
-// NewClient creates a new qli client
-func NewClient(brokers []string, secret string, topic string, groupID string) (*Qlient, error) {
-	producer, err := newProducer(brokers, secret)
+// Config represents a qlient configuration.
+// The groupID is equal to '<key>.<name>' or '<user>.<name>'.
+// SASL/SSL is enabled if the <password> is not empty.
+type Config struct {
+	Name   string
+	Broker string `envconfig:"b" required:"true"`
+	Topic  string `envconfig:"t" required:"true"`
+
+	Key      string `envconfig:"k"`
+	User     string `envconfig:"u"`
+	Password string `envconfig:"p"`
+
+	GroupID string `envconfig:"g"`
+}
+
+// NewConfigFromEnv creates a new qlient configuration using environment variables:
+// the broker url (B), the topic (T), the clientID (K)
+// and user (U) and password (P) to use SASL/SSL
+func NewConfigFromEnv(name string) (*Config, error) {
+	var conf Config
+	err := envconfig.Process("", &conf)
 	if err != nil {
+		logrus.WithError(err).Fatal("Fail to process config")
 		return nil, err
 	}
 
-	//log.SetLevel(log.DebugLevel)
+	conf.Name = name
 
+	if conf.User == "" {
+		conf.User = strings.Split(conf.Key, "-")[0]
+	} else {
+		conf.Key = conf.User
+	}
+	if conf.GroupID == "" {
+		conf.GroupID = conf.User + "." + name
+	}
+
+	logrus.Info(conf.GroupID)
+
+	return &conf, nil
+}
+
+// NewClientFromEnv creates a new qlient using environment variables
+func NewClientFromEnv(name string) (*Qlient, error) {
+	conf, err := NewConfigFromEnv(name)
+	if err != nil {
+		logrus.WithError(err).Fatal("Fail to process config")
+		return nil, err
+	}
+
+	return NewClient(conf)
+}
+
+// NewClient creates a new qlient given a config
+func NewClient(conf *Config) (*Qlient, error) {
 	return &Qlient{
-		brokers:  brokers,
-		clientID: secret, topic: topic,
-		producer:        producer,
-		consumerGroupID: groupID,
+		config:   conf,
+		err:      make(chan error),
+		IsClosed: false,
 	}, nil
 }
 
-// NewClientFromEnv creates a new qli client using environment variables
-// to configure the brokers, the topic and the secret
-func NewClientFromEnv() (*Qlient, error) {
-	brokers := []string{os.Getenv("B")}
-	topic := os.Getenv("T")
-	secret := os.Getenv("K")
-	groupID := fmt.Sprintf("qli-%s-%d", topic, time.Now().UnixNano())
-	return NewClient(brokers, secret, topic, groupID)
-}
-
-// Close closes the qli client
-func (c *Qlient) Close() {
-	log.Debug("Close qli")
-	if c.producer != nil {
-		c.closeProducer()
-	}
-	if c.consumer != nil {
-		c.closeConsumer()
-	}
-	if c.consumer082 != nil {
-		c.closeConsumer082()
+// Recover handles panic trying to send on the pub closed channel when catching ctrl+c to close the qlient
+func (q *Qlient) Recover() {
+	if r := recover(); r != nil {
+		if q.IsClosed && r == "send on closed channel" {
+			os.Exit(0)
+		}
 	}
 }
 
-func (c *Qlient) CloseOnSig() {
+// CloseOnSig waits an interruption to close the qlient
+func (q *Qlient) CloseOnSig() {
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt)
-	//syscall.SIGHUP,
-	//syscall.SIGINT,
-	//syscall.SIGTERM,
-	//syscall.SIGQUIT)
 
 	<-sigc
-	c.Close()
+	q.Close()
+}
+
+// Close closes the qlient
+func (q *Qlient) Close() {
+	q.IsClosed = true
+	logrus.Debug("set closed")
+
+	q.closeProducer()
+
+	if q.consumer != nil {
+		q.closeConsumer()
+	}
+	if q.err != nil {
+		close(q.err)
+	}
+}
+
+func (q *Qlient) enableSaramaDebugLogger() {
+	sarama.Logger = log.New(os.Stdout, "[sarama-debug] ", log.LstdFlags)
 }
