@@ -26,9 +26,7 @@ type command func(...string) string
 // NewBot creates a new bot given a name
 func NewBot(name string) *Bot {
 	q, err := client.NewClientFromEnv(name)
-	if err != nil {
-		fatalIf(err)
-	}
+	fatalIf(err)
 
 	hostname, _ := os.Hostname()
 
@@ -50,8 +48,10 @@ func NewBot(name string) *Bot {
 }
 
 func fatalIf(err error) {
-	log.Error("Fail to create qli bot client")
-	os.Exit(1)
+	if err != nil {
+		log.WithError(err).Error("Fail to create qli bot client")
+		os.Exit(1)
+	}
 }
 
 // Start start a bot
@@ -95,7 +95,9 @@ func (b *Bot) RegisterCmd(name string, command string, args ...string) *Bot {
 	b.commands[name] = func(args ...string) string {
 		stdout, err := exec.Command(name, args...).Output()
 		if err != nil {
-			log.Error("err: ", err)
+			log.WithError(err).WithFields(log.Fields{
+				"name": name, "args": args,
+			}).Error("Fail to exec command")
 		}
 		return string(stdout)
 	}

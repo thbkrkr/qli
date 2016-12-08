@@ -2,7 +2,15 @@
 
 Some Kafka experiments.
 
-## qli/client
+API, bot and oq use env vars:
+
+```
+export B=broker.com:9092
+export K=specialclientid
+export T=topic
+```
+
+### qli/client
 
 Go client to produce and consume.
 
@@ -32,7 +40,7 @@ for msg range qli.Sub() {
 
 ```
 
-## qli/api
+### qli/api
 
 HTTP API to produce and consume data.
 
@@ -45,7 +53,7 @@ curl -H "X-Auth-Key: ${KEY}" \
   localhost:4242/consume/topic/${TOPIC}
 ```
 
-## qli/bot
+### qli/bot
 
 Bot to register command, scripts ou go funcs to be executed when
 a message contains a keyword.
@@ -59,17 +67,17 @@ bot.NewBot(fmt.Sprintf("koko-%s-bot", hostname)).
   Start()
 ```
 
-## qli/oq
+### qli/oq
 
 Simple cli to produce and consume data.
 
 Consume:
 ```
-oq -b <brokers>  -k <client_id> -t <topic>
+oq
 ```
 
 Produce:
 ```
 echo '{"date": "$(date %s)", "message": "'$RANDOM'"}' | \
-  oq -b <brokers>  -k <client_id> -t <topic>
+  oq
 ```

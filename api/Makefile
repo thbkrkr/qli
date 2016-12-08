@@ -1,8 +1,6 @@
-deps:
-	govendor update +external
 
 dev:
-	go run api.go -b $(B) -k ${K} -t ${T}
+	go run api.go
 
 build: build-binary
 	doo b

@@ -1,1 +1,6 @@
+api/qli-api
+sh-bot/sh-bot
+oq/oq
+smoketest/smoketest
+
 *.env

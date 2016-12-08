@@ -4,9 +4,10 @@
 	"package": [
 		{
 			"checksumSHA1": "WQqP62ZRxFoSKUHY5DCRbklzHLg=",
+			"origin": "github.com/thbkrkr/qli/sh-bot/vendor/github.com/Shopify/sarama",
 			"path": "github.com/Shopify/sarama",
-			"revision": "482c471fbf73dc2ac66945187f811581f008c24a",
-			"revisionTime": "2016-09-07T20:18:35Z"
+			"revision": "4d11317f35f5ac643df0c4a555b1f8de09a8215d",
+			"revisionTime": "2016-11-29T15:23:52Z"
 		},
 		{
 			"checksumSHA1": "2avCvSn0XonfApKKuTMyiQmk7s0=",
@@ -16,9 +17,10 @@
 		},
 		{
 			"checksumSHA1": "+tmOxLkLwkVVakYY1XRLjbfawX0=",
+			"origin": "github.com/thbkrkr/qli/sh-bot/vendor/github.com/bsm/sarama-cluster",
 			"path": "github.com/bsm/sarama-cluster",
-			"revision": "6d37f561b2a131e011c0cecf8a4d3c96b1e0a940",
-			"revisionTime": "2016-08-17T13:23:50Z"
+			"revision": "f2a0ed43bbf3b66c4e4ed536b5189ba48b17975f",
+			"revisionTime": "2016-12-08T22:28:42Z"
 		},
 		{
 			"checksumSHA1": "rXq5zXSW6ZfBBSV2xc6Dz1Wor2w=",
@@ -34,18 +36,21 @@
 		},
 		{
 			"checksumSHA1": "y2Kh4iPlgCPXSGTCcFpzePYdzzg=",
+			"origin": "github.com/thbkrkr/qli/sh-bot/vendor/github.com/eapache/go-resiliency/breaker",
 			"path": "github.com/eapache/go-resiliency/breaker",
 			"revision": "b86b1ec0dd4209a588dc1285cdd471e73525c0b3",
 			"revisionTime": "2016-01-04T19:15:39Z"
 		},
 		{
 			"checksumSHA1": "WHl96RVZlOOdF4Lb1OOadMpw8ls=",
+			"origin": "github.com/thbkrkr/qli/sh-bot/vendor/github.com/eapache/go-xerial-snappy",
 			"path": "github.com/eapache/go-xerial-snappy",
 			"revision": "bb955e01b9346ac19dc29eb16586c90ded99a98c",
 			"revisionTime": "2016-06-09T14:24:08Z"
 		},
 		{
 			"checksumSHA1": "oCCs6kDanizatplM5e/hX76busE=",
+			"origin": "github.com/thbkrkr/qli/sh-bot/vendor/github.com/eapache/queue",
 			"path": "github.com/eapache/queue",
 			"revision": "44cc805cf13205b55f69e14bcb69867d1ae92f98",
 			"revisionTime": "2016-08-05T00:47:13Z"
@@ -77,9 +82,17 @@
 		},
 		{
 			"checksumSHA1": "W+E/2xXcE1GmJ0Qb784ald0Fn6I=",
+			"origin": "github.com/thbkrkr/qli/sh-bot/vendor/github.com/golang/snappy",
 			"path": "github.com/golang/snappy",
 			"revision": "d9eb7a3d35ec988b8585d4a0068e462c27d28380",
 			"revisionTime": "2016-05-29T05:00:41Z"
+		},
+		{
+			"checksumSHA1": "o9Tsh0YtWAiNUitlTXZJZXr1U2Q=",
+			"origin": "github.com/thbkrkr/qli/sh-bot/vendor/github.com/kelseyhightower/envconfig",
+			"path": "github.com/kelseyhightower/envconfig",
+			"revision": "f2a0ed43bbf3b66c4e4ed536b5189ba48b17975f",
+			"revisionTime": "2016-12-08T22:28:42Z"
 		},
 		{
 			"checksumSHA1": "hX+j017F4PEtIUGflAneDtLC6hs=",
