@@ -16,12 +16,21 @@
 .segment {
   height: 100%;
   width: 100%;
-  overflow: hidden;
+  overflow-y: hidden;
 }
 
 .comments {
-  overflow-y: hidden;
-  padding-right: 17px;
+  overflow-y: scroll;
+  max-width: 850px !important;
+}
+
+.ui.text.container {
+  font-size: 1rem;
+}
+
+pre {
+  font-size: 0.7em;
+  color: #E91E63;
 }
 
 </style>
@@ -30,7 +39,7 @@
 
   <h3 class="ui centered header">miaou</h3>
 
-  <div class="ui padded segment">
+  <div class="ui segment">
     <div class="ui comments">
     </div>
   </div>
@@ -50,6 +59,7 @@ var messages = []
 var index = -1
 
 $(document).keydown(function(e) {
+    console.log(e.which)
     switch(e.which) {
         case 38: // up
         if (index == -1) {
@@ -65,6 +75,10 @@ $(document).keydown(function(e) {
         }
         index++;
         $('#send').val(messages[index])
+        break
+
+        case 13: // enter
+        say()
         break
 
         default: return; // exit this handler for other keys
@@ -91,14 +105,13 @@ function createWebSocket() {
       greet = true
       msg = {user: user, message: "Hello!" }
       ws.send(JSON.stringify(msg))
-      $('.comments').append(comment('hello-bot', '<i>Welcome ' + username(msg.user) + '!</i>'))
+      $('.comments').append(HTMLmessage('hello-bot', '<i>Welcome ' + username(msg.user) + '!</i>'))
     }
   }
 
   ws.onmessage = function(event) {
-    console.log('event', JSON.parse(JSON.parse(event.data)))
     msg = JSON.parse(JSON.parse(event.data))
-    $('.comments').append(comment(msg.user, msg.message))
+    $('.comments').append(HTMLmessage(msg.user, msg.message))
     scrollToBottom($('.comments'), 100)
   }
 
@@ -115,21 +128,39 @@ function createWebSocket() {
   }
 }
 
-function generateInterval (k) {
+function generateInterval(k) {
   return Math.min(15, (Math.pow(2, k) - 1)) * 1000;
 }
 
 function say() {
-  sendInput = $('#send')
-  message = sendInput.val()
-  msg = {user: user, message: message }
-  ws.send(JSON.stringify(msg))
-  messages.push(message)
+  var input = $('#send')
+  var value = input.val()
+  if (!value) {
+    return
+  }
+  ws.send(JSON.stringify({user: user, message: value}))
+  messages.push(value)
   index = messages.length
-  sendInput.val('')
+  input.val('')
 }
 
-function comment(user, message) {
+function HTMLmessage(user, message) {
+  var json
+  try {
+    json = atob(message)
+    json = JSON.parse(json)
+    message = ''
+    //<pre>'+JSON.stringify(json, null, 2)+'</pre>'
+      message += '<table>'
+    for (var i in json) {
+    for (var k in json[i]) {
+      message += json[i][k] + ', '
+    }
+    }
+  } catch(e) {
+    delete json
+  }
+
   return `
     <div class="comment">
       <div class="avatar">
@@ -199,7 +230,7 @@ function setupUser() {
 }
 
 function setCommentsHeight() {
-  $('.comments').height($(window).height()-200)
+  $('.comments').height($(window).height()-145)
 }
 
 //
