@@ -1,31 +1,12 @@
 package client
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
 )
-
-func newSyncProducer(q *Qlient) (sarama.SyncProducer, error) {
-	producer, err := sarama.NewSyncProducer([]string{q.config.Broker}, newConfig(q.config.Key, q.config.User, q.config.Password))
-	if err != nil {
-		return nil, err
-	}
-
-	return producer, nil
-}
-
-func newAsyncProducer(q *Qlient) (sarama.AsyncProducer, error) {
-	producer, err := sarama.NewAsyncProducer([]string{q.config.Broker}, newConfig(q.config.Key, q.config.User, q.config.Password))
-	if err != nil {
-		return nil, err
-	}
-
-	return producer, nil
-}
 
 // Pub returns a channel to publish messages
 func (q *Qlient) Pub() (chan string, error) {
@@ -34,6 +15,10 @@ func (q *Qlient) Pub() (chan string, error) {
 
 // PubByTopic returns a channel to publish messages given a topic
 func (q *Qlient) PubByTopic(topic string) (chan string, error) {
+	if q.syncProducer != nil {
+		return q.pub, nil
+	}
+
 	if q.syncProducer == nil {
 		syncProducer, err := newSyncProducer(q)
 		if err != nil {
@@ -72,42 +57,6 @@ func (q *Qlient) PubByTopic(topic string) (chan string, error) {
 	return q.pub, nil
 }
 
-// Send produces one message
-func (q *Qlient) Send(value string) (partition int32, offset int64, err error) {
-	return q.SendByTopic(q.config.Topic, value)
-}
-
-// SendByTopic produces one message given a topic
-func (q *Qlient) SendByTopic(topic string, value string) (partition int32, offset int64, err error) {
-	if q.syncProducer == nil {
-		syncProducer, err := newSyncProducer(q)
-		if err != nil {
-			return 0, 0, err
-		}
-		q.syncProducer = syncProducer
-	}
-
-	msg := sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.StringEncoder(value),
-	}
-
-	partition, offset, err = q.syncProducer.SendMessage(&msg)
-	if err != nil {
-		log.WithError(err).Error("Fail to produce")
-		return 0, 0, err
-	}
-
-	log.WithFields(log.Fields{
-		"partition": partition,
-		"offset":    offset,
-		"value":     value,
-		"topic":     topic,
-	}).Debug("Produce successful")
-
-	return partition, offset, err
-}
-
 // AsyncPub returns a channel to publish messages asynchronously
 func (q *Qlient) AsyncPub() (chan string, error) {
 	return q.AsyncPubByTopic(q.config.Topic)
@@ -115,6 +64,10 @@ func (q *Qlient) AsyncPub() (chan string, error) {
 
 // AsyncPubByTopic returns a channel to publish messages asynchronously given a topic
 func (q *Qlient) AsyncPubByTopic(topic string) (chan string, error) {
+	if q.asyncProducer != nil {
+		return q.pub, nil
+	}
+
 	if q.asyncProducer == nil {
 		asyncProducer, err := newAsyncProducer(q)
 		if err != nil {
@@ -151,9 +104,8 @@ func (q *Qlient) AsyncPubByTopic(topic string) (chan string, error) {
 		for value := range q.pub {
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Println("Fail to produce: ", r)
+					log.WithField("recover", r).Error("Recover by producing")
 					os.Exit(1)
-					return
 				}
 			}()
 
@@ -174,6 +126,49 @@ func (q *Qlient) AsyncPubByTopic(topic string) (chan string, error) {
 	return q.pub, nil
 }
 
+// Send produces one message
+func (q *Qlient) Send(value string) (partition int32, offset int64, err error) {
+	return q.SendByTopic(q.config.Topic, value)
+}
+
+// SendByTopic produces one message given a topic
+func (q *Qlient) SendByTopic(topic string, value string) (partition int32, offset int64, err error) {
+	if q.syncProducer == nil {
+		syncProducer, err := newSyncProducer(q)
+		if err != nil {
+			return 0, 0, err
+		}
+		q.syncProducer = syncProducer
+	}
+
+	return q.syncProducer.SendMessage(&sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.StringEncoder(value),
+	})
+}
+
+func newSyncProducer(q *Qlient) (sarama.SyncProducer, error) {
+	config := newSaramaConfig(q.config.User, q.config.Password)
+	config.Producer.Return.Successes = true
+
+	producer, err := sarama.NewSyncProducer([]string{q.config.Broker}, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return producer, nil
+}
+
+func newAsyncProducer(q *Qlient) (sarama.AsyncProducer, error) {
+	config := newSaramaConfig(q.config.User, q.config.Password)
+	producer, err := sarama.NewAsyncProducer([]string{q.config.Broker}, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return producer, nil
+}
+
 func (q *Qlient) closeProducer() {
 	if q.pub != nil {
 		close(q.pub)
@@ -181,13 +176,13 @@ func (q *Qlient) closeProducer() {
 
 	if q.asyncProducer != nil {
 		if err := q.asyncProducer.Close(); err != nil {
-			log.WithError(err).Error("Fail to close asyncProducer")
+			log.WithError(err).Error("Fail to close async producer")
 			q.err <- err
 		}
 	}
 	if q.syncProducer != nil {
 		if err := q.syncProducer.Close(); err != nil {
-			log.WithError(err).Error("Fail to close syncProducer")
+			log.WithError(err).Error("Fail to close sync producer")
 			q.err <- err
 		}
 	}

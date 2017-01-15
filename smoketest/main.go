@@ -2,11 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -16,36 +14,33 @@ import (
 var totalMessages = 3
 
 func main() {
-	load()
-
 	done := make(chan bool)
 
-	c, err := client.NewConfigFromEnv(fmt.Sprintf("qing-%d", rand.Intn(666)))
-	handlErr(err, fmt.Sprintf("Fail to create qli client"))
-
-	q, err := client.NewClient(c)
+	q, err := client.NewClientFromEnv(fmt.Sprintf("qing-%d", rand.Intn(666)))
 	handlErr(err, fmt.Sprintf("Fail to create qli client"))
 
 	logrus.WithFields(logrus.Fields{
-		"broker": c.Broker,
-		"topic":  c.Topic,
+		"broker": os.Getenv("B"),
+		"topic":  os.Getenv("T"),
 	}).Infof("Start smoketest: produce and consume %d messages", totalMessages)
 
 	randNum := rand.New(rand.NewSource(unixTimestamp())).Int63n(10000000)
 
+	// Start to consume
 	go func() {
 		consume(q, done, randNum)
 	}()
 
-	time.Sleep(time.Duration(1) * time.Second)
+	time.Sleep(time.Duration(200) * time.Millisecond)
 
+	// Start to produce
 	for i := 0; i < totalMessages; i++ {
 		produce(q, randNum)
 	}
 
 	<-done
 
-	logrus.Info("Close")
+	logrus.Debug("Close")
 	q.Close()
 }
 
@@ -64,7 +59,7 @@ func produce(qli *client.Qlient, randNum int64) {
 
 	msg := string(bmsg)
 	qli.Send(msg)
-	logrus.WithField("msg", msg).Info("Produce")
+	logrus.WithField("msg", msg).Debug("Produce")
 }
 
 func consume(qli *client.Qlient, done chan bool, randNum int64) {
@@ -75,7 +70,7 @@ func consume(qli *client.Qlient, done chan bool, randNum int64) {
 		err := json.Unmarshal([]byte(msg), &test)
 		handlErr(err, "Fail to unmarshal Test struct")
 
-		logrus.Infof("%v", test)
+		logrus.Debugf("%v", test)
 
 		isOk := test.RandNum == randNum
 
@@ -83,10 +78,11 @@ func consume(qli *client.Qlient, done chan bool, randNum int64) {
 			"isOk":    isOk,
 			"randNum": test.RandNum,
 			"diff":    unixTimestamp() - test.Timestamp,
-		}).Info("Consume")
+		}).Debug("Consume")
 
 		count++
 		if count == totalMessages {
+			logrus.WithField("count", count).Info("OK")
 			done <- true
 			break
 		}
@@ -98,36 +94,6 @@ func unixTimestamp() int64 {
 }
 
 // --
-
-var params = map[string]param{}
-
-type param struct {
-	shortname string
-	name      string
-
-	val *string
-}
-
-func p(shortname string, val string, name string) *string {
-	p := flag.String(shortname, val, name)
-	params[name] = param{shortname: shortname, name: name, val: p}
-	return p
-}
-
-func load() {
-	flag.Parse()
-
-	for _, param := range params {
-		value := os.Getenv(strings.ToUpper(param.shortname))
-		if value != "" {
-			*param.val = value
-		}
-		if *param.val == "" {
-			logrus.Fatalf("Param '%s' required (flag %s)", param.name, param.shortname)
-		}
-	}
-
-}
 
 func handlErr(err error, context string) {
 	if err != nil {

@@ -1,8 +1,6 @@
 package bot
 
 import (
-	"fmt"
-	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,11 +11,11 @@ import (
 
 // Bot represents a robot with a name and commands
 type Bot struct {
-	name     string
+	Name     string
 	commands map[string]command
 
 	q   *client.Qlient
-	pub chan<- string
+	Pub chan<- string
 	sub <-chan string
 }
 
@@ -28,20 +26,22 @@ func NewBot(name string) *Bot {
 	q, err := client.NewClientFromEnv(name)
 	fatalIf(err)
 
-	hostname, _ := os.Hostname()
+	go q.CloseOnSig()
+
+	//hostname, _ := os.Hostname()
 
 	pub, err := q.Pub()
 	fatalIf(err)
 
 	bot := &Bot{
-		name:     fmt.Sprintf("%s-%s-%d", name, hostname, rand.Intn(100)),
+		Name:     name, //fmt.Sprintf("%s-%s", name, hostname, rand.Intn(100)),
 		commands: map[string]command{},
 		q:        q,
-		pub:      pub,
+		Pub:      pub,
 		sub:      q.Sub(),
 	}
 
-	log.Infof("Bot %s started", bot.name)
+	bot.registerPingPong()
 	bot.registerHelp()
 
 	return bot
@@ -56,29 +56,46 @@ func fatalIf(err error) {
 
 // Start start a bot
 func (b *Bot) Start() {
-	log.Infof("Start bot %s", b.name)
+	log.WithField("name", b.Name).Info("Bot started")
 
-	go func() {
-		waitSig()
-		b.q.Close()
-	}()
+	go b.q.CloseOnSig()
 
-	b.pub <- b.say("Yo!")
+	b.Pub <- b.Say("Yo!", false)
 
 	for data := range b.sub {
-		message := unmarshal(data)
+		event, err := unmarshal(data)
+		if err != nil {
+			// skip
+			continue
+		}
 
-		args := strings.Split(message.Message, " ")
-		name := args[0]
+		args := strings.Split(event.Message, " ")
 
-		commandFunc := b.commands[name]
+		var commandFunc command
+		var funcName string
+		// try with 2 args first
+		if len(args) > 1 {
+			funcName = args[0] + " " + args[1]
+			commandFunc = b.commands[funcName]
+		}
+		if commandFunc == nil {
+			funcName = args[0]
+			commandFunc = b.commands[funcName]
+		}
+		if commandFunc == nil {
+			// skip
+			continue
+		}
 
-		log.Infof("command: %v", name)
-
-		if message.User != b.name && commandFunc != nil {
+		if event.User != b.Name && commandFunc != nil {
 			// TODO: handle error
 			result := commandFunc(args[1:]...)
-			b.pub <- b.say(result)
+			log.Debugf("result: %s", result)
+			if result == "" {
+				// TODO: ?
+				continue
+			}
+			b.Pub <- b.Say(result, false)
 		}
 	}
 
@@ -122,10 +139,16 @@ func (b *Bot) RegisterScript(name string, scriptPath string, args ...string) *Bo
 
 func (b *Bot) registerHelp() {
 	b.commands["help"] = func(args ...string) string {
-		commandList := ""
-		for command, _ := range b.commands {
-			commandList += " - " + command
+		commands := []string{}
+		for command := range b.commands {
+			commands = append(commands, command)
 		}
-		return commandList
+		return strings.Join(commands, " - ")
+	}
+}
+
+func (b *Bot) registerPingPong() {
+	b.commands["ping"] = func(args ...string) string {
+		return "pong"
 	}
 }

@@ -1,9 +1,0 @@
-curl -s http://semantic-ui.com/images/avatar/small/jenny.jpg > jenny.jpg
-curl -s http://semantic-ui.com/images/avatar/small/joe.jpg > joe.jpg
-curl -s http://semantic-ui.com/images/avatar/small/laura.jpg > laura.jpg
-curl -s http://semantic-ui.com/images/avatar/small/justen.jpg > justen.jpg
-curl -s http://semantic-ui.com/images/avatar/small/helen.jpg > helen.jpg
-curl -s http://semantic-ui.com/images/avatar/small/elliot.jpg > elliot.jpg
-curl -s http://semantic-ui.com/images/avatar/small/daniel.jpg > daniel.jpg
-curl -s http://semantic-ui.com/images/avatar/small/stevie.jpg > stevie.jpg
-curl -s http://semantic-ui.com/images/avatar/small/veronika.jpg > veronika.jpg

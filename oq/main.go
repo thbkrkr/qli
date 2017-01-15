@@ -11,28 +11,35 @@ import (
 	"github.com/thbkrkr/qli/client"
 )
 
-var produceStream bool
+var (
+	name      = "oq"
+	buildDate = "dev"
+	gitCommit = "dev"
+
+	produceStream bool
+	topic         string
+)
 
 func init() {
 	flag.BoolVar(&produceStream, "s", false, "Enable produce stream")
+	flag.StringVar(&topic, "t", "", "Topic (override $T)")
 	flag.Parse()
 }
 
 func main() {
-	//logrus.SetLevel(logrus.DebugLevel)
 	hostname, _ := os.Hostname()
 
-	rand.Seed(time.Now().Unix())
+	if topic != "" {
+		os.Setenv("T", topic)
+	}
 
-	q, err := client.NewClientFromEnv(fmt.Sprintf("%s-%s-%d.%d", "oq", hostname, time.Now().Unix(), rand.Intn(100)))
+	q, err := client.NewClientFromEnv(fmt.Sprintf("%s-%s", "oq", hostname))
 	handlErr(err, "Fail to create qli client")
 
 	// Consume to stdout
 
 	if nothingInStdin() {
-		go func() {
-			q.CloseOnSig()
-		}()
+		go q.CloseOnSig()
 
 		for msg := range q.Sub() {
 			fmt.Println(msg)
@@ -43,9 +50,7 @@ func main() {
 
 	// or Produce stdin
 
-	go func() {
-		q.CloseOnSig()
-	}()
+	go q.CloseOnSig()
 
 	defer q.Recover()
 
@@ -81,6 +86,11 @@ func main() {
 }
 
 // --
+
+func random(min, max int) int {
+	rand.Seed(time.Now().Unix())
+	return rand.Intn(max-min) + min
+}
 
 func nothingInStdin() bool {
 	stat, err := os.Stdin.Stat()

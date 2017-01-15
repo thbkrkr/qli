@@ -10,7 +10,7 @@ build-binary:
 		-v $$(pwd)/..:/go/src/github.com/thbkrkr/qli \
 		-e GOBIN=/go/bin/ -e CGO_ENABLED=0 -e GOPATH=/go \
 		-w /go/src/github.com/thbkrkr/qli/sh-bot \
-			golang:1.7.3 \
+			golang:1.7.4 \
 				go build
 
 drun:

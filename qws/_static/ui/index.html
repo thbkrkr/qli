@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <title>miaou</title>
+    <link href="./app.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <div id="chat">
+      <ul class="messages" >
+        <li v-repeat="messages" v-text="$value"></li>
+      </ul>
+      <form action="" v-on="submit: post">
+        <input v-model="input" autocomplete="off" /><button>Send</button>
+      </form>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/vue/0.10.4/vue.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.6.0/socket.io.js"></script>
+    <script src="./app.js"></script>
+    <script>
+    </script>
+  </body>
+</html>

@@ -4,12 +4,10 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 
 	"github.com/Shopify/sarama"
 	"github.com/Sirupsen/logrus"
 	"github.com/bsm/sarama-cluster"
-	"github.com/kelseyhightower/envconfig"
 )
 
 // Qlient represents a qlient to produce and consume messages
@@ -29,51 +27,9 @@ type Qlient struct {
 	IsClosed bool
 }
 
-// Config represents a qlient configuration.
-// The groupID is equal to '<key>.<name>' or '<user>.<name>'.
-// SASL/SSL is enabled if the <password> is not empty.
-type Config struct {
-	Name   string
-	Broker string `envconfig:"b" required:"true"`
-	Topic  string `envconfig:"t" required:"true"`
-
-	Key      string `envconfig:"k"`
-	User     string `envconfig:"u"`
-	Password string `envconfig:"p"`
-
-	GroupID string `envconfig:"g"`
-}
-
-// NewConfigFromEnv creates a new qlient configuration using environment variables:
-// the broker url (B), the topic (T), the clientID (K)
-// and user (U) and password (P) to use SASL/SSL
-func NewConfigFromEnv(name string) (*Config, error) {
-	var conf Config
-	err := envconfig.Process("", &conf)
-	if err != nil {
-		logrus.WithError(err).Fatal("Fail to process config")
-		return nil, err
-	}
-
-	conf.Name = name
-
-	if conf.User == "" {
-		conf.User = strings.Split(conf.Key, "-")[0]
-	} else {
-		conf.Key = conf.User
-	}
-	if conf.GroupID == "" {
-		conf.GroupID = conf.User + "." + name
-	}
-
-	logrus.Info(conf.GroupID)
-
-	return &conf, nil
-}
-
 // NewClientFromEnv creates a new qlient using environment variables
 func NewClientFromEnv(name string) (*Qlient, error) {
-	conf, err := NewConfigFromEnv(name)
+	conf, err := newConfigFromEnv(name)
 	if err != nil {
 		logrus.WithError(err).Fatal("Fail to process config")
 		return nil, err
@@ -84,6 +40,10 @@ func NewClientFromEnv(name string) (*Qlient, error) {
 
 // NewClient creates a new qlient given a config
 func NewClient(conf *Config) (*Qlient, error) {
+	if conf.Debug {
+		enableDebugLogLevel()
+	}
+
 	return &Qlient{
 		config:   conf,
 		err:      make(chan error),
@@ -106,19 +66,17 @@ func (q *Qlient) CloseOnSig() {
 	signal.Notify(sigc, os.Interrupt)
 
 	<-sigc
+	logrus.Debug("Close client on sig")
 	q.Close()
 }
 
 // Close closes the qlient
 func (q *Qlient) Close() {
 	q.IsClosed = true
-	logrus.Debug("set closed")
 
+	q.closeConsumer()
 	q.closeProducer()
 
-	if q.consumer != nil {
-		q.closeConsumer()
-	}
 	if q.err != nil {
 		close(q.err)
 	}
