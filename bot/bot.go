@@ -15,7 +15,7 @@ type Bot struct {
 	commands map[string]command
 
 	q   *client.Qlient
-	Pub chan<- string
+	Pub chan string
 	sub <-chan string
 }
 
@@ -28,17 +28,17 @@ func NewBot(name string) *Bot {
 
 	go q.CloseOnSig()
 
-	//hostname, _ := os.Hostname()
-
-	pub, err := q.Pub()
+	pub, err := q.AsyncPub()
+	fatalIf(err)
+	sub, err := q.Sub()
 	fatalIf(err)
 
 	bot := &Bot{
-		Name:     name, //fmt.Sprintf("%s-%s", name, hostname, rand.Intn(100)),
+		Name:     name,
 		commands: map[string]command{},
 		q:        q,
 		Pub:      pub,
-		sub:      q.Sub(),
+		sub:      sub,
 	}
 
 	bot.registerPingPong()
@@ -57,8 +57,6 @@ func fatalIf(err error) {
 // Start start a bot
 func (b *Bot) Start() {
 	log.WithField("name", b.Name).Info("Bot started")
-
-	go b.q.CloseOnSig()
 
 	b.Pub <- b.Say("Yo!", false)
 

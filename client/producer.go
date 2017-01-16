@@ -51,6 +51,7 @@ func (q *Qlient) PubByTopic(topic string) (chan string, error) {
 				"value":     value,
 				"topic":     topic,
 			}).Debug("Produce successful")
+
 		}
 	}()
 

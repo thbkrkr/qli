@@ -49,41 +49,110 @@ pre {
 
 </div>
 
-<script src="https://thbkrkr.github.io/s.js/dist/s.11.a58e2db.zm.js"></script>
+<script src="https://thbkrkr.github.io/s.js/dist/s.11.ef9e3d2.zm.js"></script>
+<!-- <script src="https://thbkrkr.github.io/s.js/dist/s.8.96a5c7d.zm.js"></script>
+ -->
+<!-- <script>
+(function(){
+   //@ Scroll to the bottom of an element in a given duration
+  this.$scrollToBottom = function $scrollToBottom(element, duration) {
+    var el  = element[0]
+    var startPosition = el.scrollTop
+    var delta = el.scrollHeight - element.height() - startPosition
+
+    var startTime = Date.now()
+
+    function scroll() {
+      var fraction = Math.min(1, (Date.now() - startTime) / duration)
+      el.scrollTop = delta * fraction + startPosition
+      if(fraction < 1) {
+        setTimeout(scroll, 10)
+      }
+    }
+    scroll()
+  }
+
+  //@ Resize the element height to the window height less a given height
+  this.$setElementHeight = function $setElementHeight(elemClass, height) {
+    $(elemClass).height($(window).height() - height)
+  }
+
+  var _wsCtx = {
+    attempts: 0
+  }
+
+  this.$ws = function (path, onopenF, oncloseF, onmessageF) {
+    wsProto = 'ws:'
+    if (window.location.protocol == 'https:') {
+      wsProto = 'wss:'
+    }
+
+    ws = new WebSocket(wsProto + '//' + window.location.host + path)
+
+    ws.onopen = function() {
+      _wsCtx.attempts = 1
+      onopenF(path, onopenF)
+    }
+
+    ws.onmessage = function(event) {
+      onmessageF(event)
+    }
+
+    function _generateInterval(k) {
+      return Math.min(15, (Math.pow(2, k) - 1)) * 1000
+    }
+
+    ws.onclose = function(event) {
+      var time = _generateInterval(_wsCtx.attempts)
+      oncloseF(time)
+      setTimeout(function () {
+          _wsCtx.attempts++
+          ws = $ws(path, onopenF, oncloseF, onmessageF)
+      }, time)
+    }
+
+    return ws
+  }
+})()
+</script> -->
+
 <script>
 
 topic = $param('t') || 'thbkrkr.miaou'
 
-$WS('/ws?topic='+topic,
-  function() {
+$ws('/ws?topic='+topic,
+  function onopen() {
     $('#send').attr('placeholder', 'Send a message...')
     event = {user: user, message: "Hello!" }
-    $ws.send(JSON.stringify(event))
+    ws.send(JSON.stringify(event))
     $('.comments').append(HTMLmessage({
       user: 'hello~bot-bot',
       message:'<i>Welcome ' + username(event.user) + '!</i>'
     }))
   },
+  function onclose(time) {
+    $('#send').attr('placeholder', 'Connexion lost, retry in ' + (time/1000) + ' s...')
+  },
   function onmessage(event) {
-    //console.log('event.data)
     try {
       event = JSON.parse(JSON.parse(event.data))
     } catch (e) {
       // break
       return
     }
+    //console.log('event', event)
     if (!event.message) {
       console.error(event.message)
       // break
       return
     }
-    console.log('event', event)
 
     if (event.id) {
       $(event.id).append("\n"+cmdOutput(event))
     } else {
       $('.comments').append(HTMLmessage(event))
     }
+
     $scrollToBottom($('.comments'), 100)
   }
 )
@@ -172,7 +241,7 @@ function say() {
     return
   }
 
-  $ws.send(JSON.stringify({user: user, message: value}))
+  ws.send(JSON.stringify({user: user, message: value}))
   messages.push(value)
   index = messages.length
 }

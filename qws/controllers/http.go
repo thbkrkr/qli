@@ -1,11 +1,8 @@
 package controllers
 
 import (
-	"io/ioutil"
 	"time"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/gin-gonic/gin"
 	"github.com/thbkrkr/qli/client"
 )
 
@@ -40,7 +37,7 @@ func init() {
 		}
 	}()
 }
-*/
+
 
 func Pub(c *gin.Context) {
 	topic := c.Param("topic")
@@ -128,3 +125,5 @@ func qlientPerTopic(key string, topic string) (*client.Qlient, error) {
 
 	return session.client, nil
 }
+
+*/

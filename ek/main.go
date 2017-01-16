@@ -52,6 +52,11 @@ func main() {
 		return executor.ps()
 	}).RegisterCmdFunc("ek attach", func(args ...string) string {
 		return executor.attach(args)
+	}).RegisterCmdFunc("ek gc", func(args ...string) string {
+		return executor.gc()
+	}).RegisterCmdFunc("ek dps", func(args ...string) string {
+		cmd := []string{"docker", "ps", "-a", "--format", `'table{{.Names}}\t{{.Status}}'`}
+		return executor.exec(cmd)
 	}).RegisterCmdFunc("ek", func(args ...string) string {
 		return executor.exec(args)
 	}).Start()
@@ -91,13 +96,11 @@ func (e *TasksExecutor) execCommand(args []string) {
 	}
 
 	e.startTask(taskID, cmdArgs)
-	log.WithField("args", cmdArgs).Info("Start task")
 
 	// Display the command to execute in a pre with the command id
 	e.pub <- displayCmd(taskID, e.name, cmdArgs)
 
-	log.WithField("args", args).Info("Exec")
-
+	log.WithField("cmd", args).Info("exec cmd")
 	cmd := exec.Command(args[0], args[1:]...)
 	stdoutReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -105,45 +108,53 @@ func (e *TasksExecutor) execCommand(args []string) {
 		e.pub <- displayLine(taskID, e.name, err.Error())
 		return
 	}
-	/*stderrReader, err := cmd.StderrPipe()
+	stderrReader, err := cmd.StderrPipe()
 	if err != nil {
 		log.WithField("cmd", args[0]).WithError(err).Error("Error creating stderr pipe")
 		e.pub <- displayLine(taskID, e.name, err.Error())
 		return
-	}*/
+	}
 
-	log.WithField("cmd", args).Info("exec cmd")
-
+	// Stream command execution
 	scanner := bufio.NewScanner(stdoutReader)
 	go func() {
-		// Stream command execution
 		for scanner.Scan() {
 			e.pub <- displayLine(taskID, e.name, scanner.Text())
 		}
 	}()
-	/*scannerStderr := bufio.NewScanner(stderrReader)
+	scannerStderr := bufio.NewScanner(stderrReader)
 	go func() {
-		// Stream command execution
 		for scannerStderr.Scan() {
-			b.Pub <- displayLine(taskID, e.name, scanner.Text())
+			e.pub <- displayLine(taskID, e.name, scannerStderr.Text())
 		}
-	}()*/
+	}()
 
 	err = cmd.Start()
 	if err != nil {
+		log.Error(err)
 		e.markTaskInError(taskID)
 		e.pub <- displayLine(taskID, e.name, err.Error())
 		return
 	}
-
 	err = cmd.Wait()
 	if err != nil {
+		log.Error(err)
 		e.markTaskInError(taskID)
 		e.pub <- displayLine(taskID, e.name, err.Error())
 		return
 	}
 
 	e.markTaskAsDone(taskID)
+}
+
+func (e *TasksExecutor) gc() string {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	ntasks := len(e.tasks)
+	e.tasks = map[string]Task{}
+
+	return fmt.Sprintf("%d tasks removed", ntasks)
 }
 
 func (e *TasksExecutor) startTask(taskID string, cmd string) {
@@ -176,13 +187,13 @@ func displayCmd(taskID string, user string, argz string) string {
 	return fmt.Sprintf(
 		`{"user": "%s", "message":"%s", "b64":"%t"}`,
 		user,
-		`<pre id='task-`+botID+taskID+`'>&gt; `+argz+`</pre>`,
+		`<pre id='task-`+botID+"-"+taskID+`'>&gt; `+argz+`</pre>`,
 		false)
 }
 
 func displayLine(taskID string, user string, line string) string {
 	return fmt.Sprintf(
-		`{"user": "%s", "message":"%s", "b64":"%t", "id":"#task-%s%s"}`,
+		`{"user": "%s", "message":"%s", "b64":"%t", "id":"#task-%s-%s"}`,
 		user,
 		base64.StdEncoding.EncodeToString([]byte(line)),
 		true, botID, taskID)
