@@ -140,7 +140,7 @@ $ws('/ws?topic='+topic,
       // break
       return
     }
-    //console.log('event', event)
+    console.log('event', event)
     if (!event.message) {
       console.error(event.message)
       // break
@@ -158,7 +158,7 @@ $ws('/ws?topic='+topic,
 )
 
 function cmdOutput(event) {
-  var message = event.message
+  message = event.message
   if (event.b64 === "true") {
     try {
       message = atob(message)
@@ -169,9 +169,20 @@ function cmdOutput(event) {
 }
 
 function HTMLmessage(msg) {
-  var message = msg.message
+  message = msg.message
 
-  if (msg.b64 === "true") {
+  b64 = /[A-Za-z0-9+/]{14}[A-Za-z0-9+/=]*/
+  b64Decoded = false
+  if (b64.test(message)) {
+    try {
+      message = atob(message)
+      message = '<pre>'+message+'</pre>'
+      b64Decoded = true
+    } catch(e) {
+    }
+  }
+
+  if (!b64Decoded && msg.b64 === "true") {
     try {
       message = atob(message)
     } catch(e) {

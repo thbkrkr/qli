@@ -32,3 +32,4 @@ test-ab-produce:
 	ab -c 500 -n 8000 -H "X-Auth-Key: ${KEY}" \
 		-p data "http://localhost:4242/produce/topic/${TOPIC}"
 	rm data
+
