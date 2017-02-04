@@ -58,13 +58,18 @@ func produce(qli *client.Qlient, randNum int64) {
 	handlErr(err, "Fail to marshal Test struct")
 
 	msg := string(bmsg)
-	qli.Send(msg)
+	_, _, err = qli.Send(msg)
+	handlErr(err, "Fail to send test message")
+
 	logrus.WithField("msg", msg).Debug("Produce")
 }
 
 func consume(qli *client.Qlient, done chan bool, randNum int64) {
+	sub, err := qli.Sub()
+	handlErr(err, "Fail to create qli consumer")
+
 	count := 0
-	for msg := range qli.Sub() {
+	for msg := range sub {
 
 		var test Test
 		err := json.Unmarshal([]byte(msg), &test)
