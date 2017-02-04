@@ -141,7 +141,7 @@ func (b *Bot) registerHelp() {
 		for command := range b.commands {
 			commands = append(commands, command)
 		}
-		return strings.Join(commands, " - ")
+		return "commands: " + strings.Join(commands, " - ")
 	}
 }
 
