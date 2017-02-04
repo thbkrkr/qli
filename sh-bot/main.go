@@ -13,8 +13,11 @@ import (
 func main() {
 	name := os.Getenv("BOT_NAME")
 	if name == "" {
-		name = fmt.Sprintf("bot-%s-bot", time.Now())
+		hostname, _ := os.Hostname()
+		now := time.Now().UnixNano()
+		name = fmt.Sprintf("%s-%d~bot-bot2", hostname, now)
 	}
+
 	bot := qli.NewBot(name)
 
 	dir := "./cmd"
