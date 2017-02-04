@@ -39,9 +39,12 @@ func main() {
 	// Consume to stdout
 
 	if nothingInStdin() {
+		sub, err := q.Sub()
+		handlErr(err, "Fail to create qli consumer")
+
 		go q.CloseOnSig()
 
-		for msg := range q.Sub() {
+		for msg := range sub {
 			fmt.Println(msg)
 		}
 
@@ -60,7 +63,7 @@ func main() {
 
 	if produceStream {
 		pub, err := q.AsyncPub()
-		handlErr(err, "Fail to create qli produce")
+		handlErr(err, "Fail to create qli producer")
 
 		stdin := bufio.NewScanner(os.Stdin)
 		for stdin.Scan() {
@@ -72,7 +75,7 @@ func main() {
 
 	} else {
 		pub, err := q.Pub()
-		handlErr(err, "Fail to create qli produce")
+		handlErr(err, "Fail to create qli producer")
 
 		stdin := bufio.NewScanner(os.Stdin)
 		for stdin.Scan() {
