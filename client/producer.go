@@ -87,15 +87,17 @@ func (q *Qlient) AsyncPubByTopic(topic string) (chan string, error) {
 		}
 	}()
 
-	go func() {
-		for success := range q.asyncProducer.Successes() {
-			log.WithFields(log.Fields{
-				"offset":    success.Offset,
-				"partition": success.Partition,
-				"value":     success.Value,
-			}).Debug("Async produce successful")
-		}
-	}()
+	if log.GetLevel() == log.DebugLevel {
+		go func() {
+			for success := range q.asyncProducer.Successes() {
+				log.WithFields(log.Fields{
+					"offset":    success.Offset,
+					"partition": success.Partition,
+					"value":     success.Value,
+				}).Debug("Async produce successful")
+			}
+		}()
+	}
 
 	input := q.asyncProducer.Input()
 
@@ -127,9 +129,85 @@ func (q *Qlient) AsyncPubByTopic(topic string) (chan string, error) {
 	return q.pub, nil
 }
 
+// AsyncPubMsg returns a channel to publish messages asynchronously
+func (q *Qlient) AsyncPubMsg() (chan []byte, error) {
+	return q.AsyncPubMsgByTopic(q.config.Topic)
+}
+
+// AsyncPubMsgByTopic returns a channel to publish messages asynchronously given a topic
+func (q *Qlient) AsyncPubMsgByTopic(topic string) (chan []byte, error) {
+	if q.asyncProducer != nil {
+		return q.pubMsg, nil
+	}
+
+	if q.asyncProducer == nil {
+		asyncProducer, err := newAsyncProducer(q)
+		if err != nil {
+			return nil, err
+		}
+		q.asyncProducer = asyncProducer
+	}
+
+	go func() {
+		for err := range q.asyncProducer.Errors() {
+			if !strings.Contains(err.Error(), "producer in process of shutting down") {
+				log.WithError(err).Error("Fail to produce async message")
+			}
+		}
+	}()
+
+	if log.GetLevel() == log.DebugLevel {
+		go func() {
+			for success := range q.asyncProducer.Successes() {
+				log.WithFields(log.Fields{
+					"offset":    success.Offset,
+					"partition": success.Partition,
+					"value":     success.Value,
+				}).Debug("Async produce successful")
+			}
+		}()
+	}
+
+	q.pubMsg = make(chan []byte)
+
+	input := q.asyncProducer.Input()
+
+	// Listen pub and send received messages
+	go func() {
+
+		for data := range q.pubMsg {
+			defer func() {
+				if r := recover(); r != nil {
+					log.WithField("recover", r).Error("Recover by producing")
+					os.Exit(1)
+				}
+			}()
+
+			msg := &sarama.ProducerMessage{
+				Topic: topic,
+				Value: sarama.ByteEncoder(data),
+			}
+
+			input <- msg
+
+			log.WithFields(log.Fields{
+				//"value": value,
+				"topic": topic,
+			}).Debug("Produce sent")
+		}
+	}()
+
+	return q.pubMsg, nil
+}
+
 // Send produces one message
 func (q *Qlient) Send(value string) (partition int32, offset int64, err error) {
 	return q.SendByTopic(q.config.Topic, value)
+}
+
+// SendBytes produces one message
+func (q *Qlient) SendBytes(data []byte) (partition int32, offset int64, err error) {
+	return q.SendBytesByTopic(q.config.Topic, data)
 }
 
 // SendByTopic produces one message given a topic
@@ -145,6 +223,22 @@ func (q *Qlient) SendByTopic(topic string, value string) (partition int32, offse
 	return q.syncProducer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
 		Value: sarama.StringEncoder(value),
+	})
+}
+
+// SendBytesByTopic produces one message given a topic
+func (q *Qlient) SendBytesByTopic(topic string, data []byte) (partition int32, offset int64, err error) {
+	if q.syncProducer == nil {
+		syncProducer, err := newSyncProducer(q)
+		if err != nil {
+			return 0, 0, err
+		}
+		q.syncProducer = syncProducer
+	}
+
+	return q.syncProducer.SendMessage(&sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(data),
 	})
 }
 
@@ -173,6 +267,9 @@ func newAsyncProducer(q *Qlient) (sarama.AsyncProducer, error) {
 func (q *Qlient) closeProducer() {
 	if q.pub != nil {
 		close(q.pub)
+	}
+	if q.pubMsg != nil {
+		close(q.pubMsg)
 	}
 
 	if q.asyncProducer != nil {

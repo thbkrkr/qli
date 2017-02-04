@@ -20,9 +20,11 @@ type Qlient struct {
 	consumer        *cluster.Consumer
 	consumerGroupID string
 
-	pub chan string
-	sub chan string
-	err chan error
+	pub    chan string
+	pubMsg chan []byte
+	sub    chan string
+	subMsg chan *sarama.ConsumerMessage
+	err    chan error
 
 	IsClosed bool
 }
