@@ -1,5 +1,7 @@
 # Qli
 
+[![Build Status](https://travis-ci.org/thbkrkr/qli.svg)](https://travis-ci.org/thbkrkr/qli)
+
 Some Kafka experiments.
 
 API, bot and oq use env vars:
