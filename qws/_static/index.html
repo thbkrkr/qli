@@ -9,8 +9,12 @@
 </head><body>
 
 <style>
-.main.container {
+.main .container {
   padding-top: 1em;
+}
+
+.ui .header {
+  padding-top: 0.7em;
 }
 
 .segment {
@@ -19,7 +23,7 @@
   overflow-y: hidden;
 }
 
-.ui.comments {
+.ui .comments {
   overflow-y: scroll;
   max-width: 1127px;
 }
@@ -32,100 +36,124 @@ pre {
   max-height: 200px;
   margin-right: 10px;
 }
+
+.dark .comments {
+  padding: 10px;
+  margin: 0;
+  background: #444;
+  color: #f1f1f1;
+  font-family: monospace;
+  font-size: 0.9em;
+  max-width: 100%;
+}
+
+.dark .date {
+  color: #FFFF91;
+}
+
+.dark .separator {
+  color: #00b5ad;
+}
+
+.dark .author {
+  display: inline-block;
+  color: #fbbd08;
+  min-width: 70px;
+}
+
+.dark .chatbar > input  {
+  border: 0px;
+  width: 100%;
+  height: 30px
+}
+
+.dark > pre {
+  color: #565656;
+  background: #cecece;
+  padding: 3px;
+  max-height: 200px;
+  margin: 3px 0;
+  font-size: 0.7em;
+}
+
 </style>
 
-<div class="ui main container">
-
-  <h3 class="ui centered header">miaou</h3>
-
-  <div class="ui segment">
-    <div class="ui comments">
-    </div>
-  </div>
-
-  <div class="ui fluid input chatbar">
-    <input type="text" id="send">
-  </div>
-
-</div>
-
 <script src="https://thbkrkr.github.io/s.js/dist/s.11.ef9e3d2.zm.js"></script>
-<!-- <script src="https://thbkrkr.github.io/s.js/dist/s.8.96a5c7d.zm.js"></script>
- -->
-<!-- <script>
-(function(){
-   //@ Scroll to the bottom of an element in a given duration
-  this.$scrollToBottom = function $scrollToBottom(element, duration) {
-    var el  = element[0]
-    var startPosition = el.scrollTop
-    var delta = el.scrollHeight - element.height() - startPosition
-
-    var startTime = Date.now()
-
-    function scroll() {
-      var fraction = Math.min(1, (Date.now() - startTime) / duration)
-      el.scrollTop = delta * fraction + startPosition
-      if(fraction < 1) {
-        setTimeout(scroll, 10)
-      }
-    }
-    scroll()
-  }
-
-  //@ Resize the element height to the window height less a given height
-  this.$setElementHeight = function $setElementHeight(elemClass, height) {
-    $(elemClass).height($(window).height() - height)
-  }
-
-  var _wsCtx = {
-    attempts: 0
-  }
-
-  this.$ws = function (path, onopenF, oncloseF, onmessageF) {
-    wsProto = 'ws:'
-    if (window.location.protocol == 'https:') {
-      wsProto = 'wss:'
-    }
-
-    ws = new WebSocket(wsProto + '//' + window.location.host + path)
-
-    ws.onopen = function() {
-      _wsCtx.attempts = 1
-      onopenF(path, onopenF)
-    }
-
-    ws.onmessage = function(event) {
-      onmessageF(event)
-    }
-
-    function _generateInterval(k) {
-      return Math.min(15, (Math.pow(2, k) - 1)) * 1000
-    }
-
-    ws.onclose = function(event) {
-      var time = _generateInterval(_wsCtx.attempts)
-      oncloseF(time)
-      setTimeout(function () {
-          _wsCtx.attempts++
-          ws = $ws(path, onopenF, oncloseF, onmessageF)
-      }, time)
-    }
-
-    return ws
-  }
-})()
-</script> -->
-
 <script>
 
-topic = $param('t') || 'thbkrkr.miaou'
+topic = $param('topic') || 'thbkrkr.miaou'
+skin  = $param('skin') || 'normal'
+
+document.body.innerHTML += window['skin_'+skin]()
+
+bottomSpace = 145
+if (skin == "dark") {
+  bottomSpace = 30
+}
+
+function skin_normal() {
+  return `
+    <div class="ui main container">
+      <h3 class="ui centered header">`+topic+`</h3>
+      <div class="ui segment">
+        <div class="ui comments">
+        </div>
+      </div>
+      <div class="ui fluid input chatbar">
+        <input type="text" id="send" autocorrect="off" autocapitalize="off">
+      </div>
+    </div>
+  `
+}
+
+function skin_dark() {
+  return `
+    <div class="dark main">
+      <div class="ui">
+        <div class="ui comments">
+        </div>
+      </div>
+      <div class="ui fluid input chatbar">
+        <input type="text" id="send" autocorrect="off" autocapitalize="off">
+      </div>
+    </div>
+  `
+}
+
+function skin_normal_event(event) {
+  return `
+    <div class="comment">
+      <div class="avatar">
+        <img src="` + avatar(event.user) + `">
+      </div>
+      <div class="content">
+        <a class="author"> ` + username(event.user) + ` </a>
+        <div class="metadata">
+          <span class="date">` + moment().fromNow() + `</span>
+        </div>
+        <div class="text">
+          ` + event.message + `
+        </div>
+      </div>
+    </div>`
+}
+
+function skin_dark_event(event) {
+  return `
+    <div class="message">
+      <span class="author"> ` + username(event.user) + ` </span>
+      <span class="text"><span class="separator">></span>
+        ` + event.message + `
+      </span>
+    </div>`
+}
 
 $ws('/ws?topic='+topic,
   function onopen() {
     $('#send').attr('placeholder', 'Send a message...')
     event = {user: user, message: "Hello!" }
     ws.send(JSON.stringify(event))
-    $('.comments').append(HTMLmessage({
+    $('.comments').append(renderEventAsHTML({
       user: 'hello~bot-bot',
       message:'<i>Welcome ' + username(event.user) + '!</i>'
     }))
@@ -133,31 +161,33 @@ $ws('/ws?topic='+topic,
   function onclose(time) {
     $('#send').attr('placeholder', 'Connexion lost, retry in ' + (time/1000) + ' s...')
   },
-  function onmessage(event) {
-    try {
-      event = JSON.parse(JSON.parse(event.data))
-    } catch (e) {
-      // break
-      return
-    }
-    console.log('event', event)
-    if (!event.message) {
-      console.error(event.message)
-      // break
-      return
-    }
-
-    if (event.id) {
-      $(event.id).append("\n"+cmdOutput(event))
-    } else {
-      $('.comments').append(HTMLmessage(event))
-    }
-
-    $scrollToBottom($('.comments'), 100)
-  }
+  onmessage
 )
 
-function cmdOutput(event) {
+function onmessage(event) {
+  try {
+    event = JSON.parse(JSON.parse(event.data))
+  } catch (e) {
+    // break
+    return
+  }
+  console.log('event', event)
+  if (!event.message) {
+    console.error(event.message)
+    // break
+    return
+  }
+
+  if (event.id) {
+    $(event.id).append("\n"+renderCmdOutputAsHTML(event))
+  } else {
+    $('.comments').append(renderEventAsHTML(event))
+  }
+
+  $scrollToBottom($('.comments'), 100)
+}
+
+function renderCmdOutputAsHTML(event) {
   message = event.message
   if (event.b64 === "true") {
     try {
@@ -168,8 +198,8 @@ function cmdOutput(event) {
   return message
 }
 
-function HTMLmessage(msg) {
-  message = msg.message
+function renderEventAsHTML(event) {
+  message = event.message
 
   b64 = /[A-Za-z0-9+/]{14}[A-Za-z0-9+/=]*/
   b64Decoded = false
@@ -182,7 +212,7 @@ function HTMLmessage(msg) {
     }
   }
 
-  if (!b64Decoded && msg.b64 === "true") {
+  if (!b64Decoded && event.b64 === "true") {
     try {
       message = atob(message)
     } catch(e) {
@@ -199,21 +229,9 @@ function HTMLmessage(msg) {
   } catch(e) {
   }
 
-  return `
-    <div class="comment">
-      <div class="avatar">
-        <img src="` + avatar(msg.user) + `">
-      </div>
-      <div class="content">
-        <a class="author"> ` + username(msg.user) + ` </a>
-        <div class="metadata">
-          <span class="date">` + moment().fromNow() + `</span>
-        </div>
-        <div class="text">
-          ` + message + `
-        </div>
-      </div>
-    </div>`
+  event.message = message
+
+  return window["skin_" + skin + "_event"](event)
 }
 
 function avatar(user) {
@@ -307,9 +325,9 @@ function setupUser() {
 
 setupUser()
 
-$setElementHeight('.comments', 145)
+$setElementHeight('.comments', bottomSpace)
 window.onresize = function() {
-  $setElementHeight('.comments', 145)
+  $setElementHeight('.comments', bottomSpace)
 }
 
 $('#send').on('change', say)
