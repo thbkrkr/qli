@@ -19,7 +19,7 @@ type Bot struct {
 	sub <-chan string
 }
 
-type command func(...string) string
+type command func(...string) (string, error)
 
 // NewBot creates a new bot given a name
 func NewBot(name string) *Bot {
@@ -69,31 +69,33 @@ func (b *Bot) Start() {
 
 		args := strings.Split(event.Message, " ")
 
-		var commandFunc command
+		var cmd command
 		var funcName string
 		// try with 2 args first
 		if len(args) > 1 {
 			funcName = args[0] + " " + args[1]
-			commandFunc = b.commands[funcName]
+			cmd = b.commands[funcName]
 		}
-		if commandFunc == nil {
+		if cmd == nil {
 			funcName = args[0]
-			commandFunc = b.commands[funcName]
+			cmd = b.commands[funcName]
 		}
-		if commandFunc == nil {
+		if cmd == nil {
 			// skip
 			continue
 		}
 
-		if event.User != b.Name && commandFunc != nil {
-			// TODO: handle error
-			result := commandFunc(args[1:]...)
-			log.Debugf("result: %s", result)
-			if result == "" {
-				// TODO: ?
-				continue
-			}
-			b.Pub <- b.Say(result, false)
+		if event.User != b.Name && cmd != nil {
+			go func(p []string) {
+				resp, err := cmd(p...)
+				if resp == "" {
+					resp = "Ok. Empty response."
+				}
+				if err != nil {
+					resp = err.Error()
+				}
+				b.Pub <- b.Say(resp, false)
+			}(args[1:])
 		}
 	}
 
@@ -107,14 +109,9 @@ func (b *Bot) RegisterCmdFunc(name string, c command) *Bot {
 }
 
 func (b *Bot) RegisterCmd(name string, command string, args ...string) *Bot {
-	b.commands[name] = func(args ...string) string {
+	b.commands[name] = func(args ...string) (string, error) {
 		stdout, err := exec.Command(name, args...).Output()
-		if err != nil {
-			log.WithError(err).WithFields(log.Fields{
-				"name": name, "args": args,
-			}).Error("Fail to exec command")
-		}
-		return string(stdout)
+		return string(stdout), err
 	}
 
 	return b
@@ -125,28 +122,25 @@ func (b *Bot) RegisterScript(name string, scriptPath string, args ...string) *Bo
 		exitf("Script not found: %s", scriptPath)
 	}
 
-	b.commands[name] = func(args ...string) string {
+	b.commands[name] = func(args ...string) (string, error) {
 		stdout, err := exec.Command(scriptPath, args...).Output()
-		if err != nil {
-			log.Warn("err: ", err)
-		}
-		return string(stdout)
+		return string(stdout), err
 	}
 	return b
 }
 
 func (b *Bot) registerHelp() {
-	b.commands["help"] = func(args ...string) string {
+	b.commands["help"] = func(args ...string) (string, error) {
 		commands := []string{}
 		for command := range b.commands {
 			commands = append(commands, command)
 		}
-		return "commands: " + strings.Join(commands, " - ")
+		return "commands: " + strings.Join(commands, " - "), nil
 	}
 }
 
 func (b *Bot) registerPingPong() {
-	b.commands["ping"] = func(args ...string) string {
-		return "pong"
+	b.commands["ping"] = func(args ...string) (string, error) {
+		return "pong", nil
 	}
 }

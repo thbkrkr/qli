@@ -48,16 +48,16 @@ func main() {
 		lock:  sync.RWMutex{},
 	}
 
-	b.RegisterCmdFunc("ek ps", func(args ...string) string {
+	b.RegisterCmdFunc("ek ps", func(args ...string) (string, error) {
 		return executor.ps()
-	}).RegisterCmdFunc("ek attach", func(args ...string) string {
+	}).RegisterCmdFunc("ek attach", func(args ...string) (string, error) {
 		return executor.attach(args)
-	}).RegisterCmdFunc("ek gc", func(args ...string) string {
+	}).RegisterCmdFunc("ek gc", func(args ...string) (string, error) {
 		return executor.gc()
-	}).RegisterCmdFunc("ek dps", func(args ...string) string {
+	}).RegisterCmdFunc("ek dps", func(args ...string) (string, error) {
 		cmd := []string{"docker", "ps", "-a", "--format", `'table{{.Names}}\t{{.Status}}'`}
 		return executor.exec(cmd)
-	}).RegisterCmdFunc("ek", func(args ...string) string {
+	}).RegisterCmdFunc("ek", func(args ...string) (string, error) {
 		return executor.exec(args)
 	}).Start()
 }
@@ -78,12 +78,12 @@ type Task struct {
 	State   string
 }
 
-func (e *TasksExecutor) exec(args []string) string {
+func (e *TasksExecutor) exec(args []string) (string, error) {
 	if len(args) == 0 {
-		return "ping!"
+		return "ping!", nil
 	}
 	go e.execCommand(args)
-	return ""
+	return "", nil
 }
 
 func (e *TasksExecutor) execCommand(args []string) {
@@ -147,14 +147,14 @@ func (e *TasksExecutor) execCommand(args []string) {
 	e.markTaskAsDone(taskID)
 }
 
-func (e *TasksExecutor) gc() string {
+func (e *TasksExecutor) gc() (string, error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
 	ntasks := len(e.tasks)
 	e.tasks = map[string]Task{}
 
-	return fmt.Sprintf("%d tasks removed", ntasks)
+	return fmt.Sprintf("%d tasks removed", ntasks), nil
 }
 
 func (e *TasksExecutor) startTask(taskID string, cmd string) {
@@ -199,7 +199,7 @@ func displayLine(taskID string, user string, line string) string {
 		true, botID, taskID)
 }
 
-func (e *TasksExecutor) ps() string {
+func (e *TasksExecutor) ps() (string, error) {
 	e.lock.RLock()
 	defer e.lock.RUnlock()
 
@@ -210,18 +210,18 @@ func (e *TasksExecutor) ps() string {
 		i++
 	}
 
-	return strings.Join(t, ", ")
+	return strings.Join(t, ", "), nil
 }
 
-func (e *TasksExecutor) attach(args []string) string {
+func (e *TasksExecutor) attach(args []string) (string, error) {
 	if len(args) != 2 {
-		return "missing taskID"
+		return "missing taskID", nil
 	}
 	taskID := args[1]
 	task, is := e.tasks[taskID]
 	if !is {
-		return "task not found"
+		return "task not found", nil
 	}
 	e.pub <- displayCmd(taskID, e.name, "ek attach "+task.Command)
-	return ""
+	return "", nil
 }
