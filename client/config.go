@@ -14,9 +14,9 @@ import (
 // The groupID is equal to '<key>.<name>' or '<user>.<name>'.
 // SASL/SSL is enabled if the <password> is not empty.
 type Config struct {
-	Name   string
-	Broker string `envconfig:"b" required:"true"`
-	Topic  string `envconfig:"t" required:"true"`
+	Name    string
+	Brokers string `envconfig:"b" required:"true"`
+	Topic   string `envconfig:"t" required:"true"`
 
 	Key      string `envconfig:"k"`
 	User     string `envconfig:"u"`

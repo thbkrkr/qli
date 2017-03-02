@@ -246,7 +246,7 @@ func newSyncProducer(q *Qlient) (sarama.SyncProducer, error) {
 	config := newSaramaConfig(q.config.User, q.config.Password)
 	config.Producer.Return.Successes = true
 
-	producer, err := sarama.NewSyncProducer([]string{q.config.Broker}, config)
+	producer, err := sarama.NewSyncProducer(strings.Split(q.config.Brokers, ","), config)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func newSyncProducer(q *Qlient) (sarama.SyncProducer, error) {
 
 func newAsyncProducer(q *Qlient) (sarama.AsyncProducer, error) {
 	config := newSaramaConfig(q.config.User, q.config.Password)
-	producer, err := sarama.NewAsyncProducer([]string{q.config.Broker}, config)
+	producer, err := sarama.NewAsyncProducer(strings.Split(q.config.Brokers, ","), config)
 	if err != nil {
 		return nil, err
 	}

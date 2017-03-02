@@ -113,12 +113,12 @@ func (q *Qlient) SubMsgByTopic(topic string) (chan *sarama.ConsumerMessage, erro
 		}
 	}()
 
-	return q.subMsg, nil
+	return q.subMsg, nil*/
 }
 
 func (q *Qlient) newConsumerByTopic(topic string) (*cluster.Consumer, error) {
 	config := newSaramaClusterConfig(q.config.User, q.config.Password)
-	consumer, err := cluster.NewConsumer([]string{q.config.Broker}, q.config.GroupID, []string{topic}, config)
+	consumer, err := cluster.NewConsumer(strings.Split(q.config.Brokers, ","), q.config.GroupID, []string{topic}, config)
 	if err != nil {
 		return nil, err
 	}
