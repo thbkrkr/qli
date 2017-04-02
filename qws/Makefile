@@ -12,7 +12,7 @@ build-binary:
 		-e CGO_ENABLED=0 \
 		-e GOPATH=/go \
 		-w /go/src/github.com/thbkrkr/qli/qws \
-			golang:1.7.4 go build
+			golang:1.8.0 go build
 
 run:
 	docker run --rm -p 80:4242 krkr/miaou \
