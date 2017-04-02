@@ -3,16 +3,23 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "zTn0jzjOiJlScR1px66MvrgrlLs=",
+			"origin": "github.com/docker/docker/vendor/github.com/Microsoft/go-winio",
+			"path": "github.com/Microsoft/go-winio",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
 			"checksumSHA1": "kTlNdyZIhQxOA+kQKpoQaptbNhE=",
 			"path": "github.com/Shopify/sarama",
 			"revision": "0fb560e5f7fbcaee2f75e3c34174320709f69944",
 			"revisionTime": "2016-12-20T18:06:09Z"
 		},
 		{
-			"checksumSHA1": "2avCvSn0XonfApKKuTMyiQmk7s0=",
+			"checksumSHA1": "dGXnnR7ZhsrZNnEqFimk6q7YCqs=",
 			"path": "github.com/Sirupsen/logrus",
-			"revision": "3ec0642a7fb6488f65b06f9040adc67e3990296a",
-			"revisionTime": "2016-08-29T20:23:21Z"
+			"revision": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d",
+			"revisionTime": "2017-01-13T01:19:11Z"
 		},
 		{
 			"checksumSHA1": "+tmOxLkLwkVVakYY1XRLjbfawX0=",
@@ -37,6 +44,175 @@
 			"path": "github.com/dgrijalva/jwt-go",
 			"revision": "01aeca54ebda6e0fbfafd0a524d234159c05ec20",
 			"revisionTime": "2016-07-05T20:30:06Z"
+		},
+		{
+			"checksumSHA1": "Gj+xR1VgFKKmFXYOJMnAczC3Znk=",
+			"origin": "github.com/docker/docker/vendor/github.com/docker/distribution/digestset",
+			"path": "github.com/docker/distribution/digestset",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "m4wEFD0Mh+ClfprUqgl0GyNmk7Q=",
+			"origin": "github.com/docker/docker/vendor/github.com/docker/distribution/reference",
+			"path": "github.com/docker/distribution/reference",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "H95cbRjbfyyV2+iwwt7mlDvqu3g=",
+			"path": "github.com/docker/docker/api",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "P7wYsFH6JBF5PeRSKyNnGAvFQtU=",
+			"path": "github.com/docker/docker/api/types",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "jVJDbe0IcyjoKc2xbohwzQr+FF0=",
+			"path": "github.com/docker/docker/api/types/blkiodev",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "On8Z2ak/FE4i11b4owiJ7z8zXn8=",
+			"path": "github.com/docker/docker/api/types/container",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "fzeGodcTcWuV18AT0BcvB4EFByo=",
+			"path": "github.com/docker/docker/api/types/events",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "J2OKngfI3vgswudr9PZVUFcRRu0=",
+			"path": "github.com/docker/docker/api/types/filters",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "yeB781yxPhnN6OXQ9/qSsyih3ek=",
+			"path": "github.com/docker/docker/api/types/image",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "OXsrx4ynzLV+6/6vUeyru0Fprx8=",
+			"path": "github.com/docker/docker/api/types/mount",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "dgDuXxG0tFyNEs+iDZ9IVZwix5g=",
+			"path": "github.com/docker/docker/api/types/network",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "93qfc2M61FdF62qeGXZHWpVSK8k=",
+			"path": "github.com/docker/docker/api/types/registry",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "VTxWyFud/RedrpllGdQonVtGM/A=",
+			"path": "github.com/docker/docker/api/types/strslice",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "DLVpLK3v3WXMHw5TwlqAnPNvypk=",
+			"path": "github.com/docker/docker/api/types/swarm",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "B7ZwKzrv3t3Vlox6/bYMHhMjsM8=",
+			"path": "github.com/docker/docker/api/types/time",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "uDPQ3nHsrvGQc9tg/J9OSC4N5dQ=",
+			"path": "github.com/docker/docker/api/types/versions",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "IBJy2zPEnYmcFJ3lM1eiRWnCxTA=",
+			"path": "github.com/docker/docker/api/types/volume",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "faR7Z2BGwCcrjux2OOLBcxgHJ+Y=",
+			"path": "github.com/docker/docker/client",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "MgSwrRRAfCQrrToxPAoMCmbieLE=",
+			"path": "github.com/docker/docker/pkg/ioutils",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "ndnAFCfsGC3upNQ6jAEwzxcurww=",
+			"path": "github.com/docker/docker/pkg/longpath",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "NGqzajRG0Vri8ConQuHY3cCs1RA=",
+			"path": "github.com/docker/docker/pkg/system",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "8I0Ez+aUYGpsDEVZ8wN/Ztf6Zqs=",
+			"path": "github.com/docker/docker/pkg/tlsconfig",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "JbiWTzH699Sqz25XmDlsARpMN9w=",
+			"origin": "github.com/docker/docker/vendor/github.com/docker/go-connections/nat",
+			"path": "github.com/docker/go-connections/nat",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "jhJVb8F11JMJmOxCPnQ0ZC4qfyk=",
+			"origin": "github.com/docker/docker/vendor/github.com/docker/go-connections/sockets",
+			"path": "github.com/docker/go-connections/sockets",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "gepJY7gUjO4HtlNqIaBjFysiaDM=",
+			"origin": "github.com/docker/docker/vendor/github.com/docker/go-connections/tlsconfig",
+			"path": "github.com/docker/go-connections/tlsconfig",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "/lW9matMszO1TaZ2dD4+uUo8oFY=",
+			"origin": "github.com/docker/docker/vendor/github.com/docker/go-units",
+			"path": "github.com/docker/go-units",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "24SkYB9U5H8P4qmrLEAZa8HZseQ=",
+			"origin": "github.com/docker/docker/vendor/github.com/docker/libtrust",
+			"path": "github.com/docker/libtrust",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
 		},
 		{
 			"checksumSHA1": "y2Kh4iPlgCPXSGTCcFpzePYdzzg=",
@@ -88,10 +264,10 @@
 			"revisionTime": "2016-05-29T05:00:41Z"
 		},
 		{
-			"checksumSHA1": "o9Tsh0YtWAiNUitlTXZJZXr1U2Q=",
+			"checksumSHA1": "pyUcq4sKKVm0KzBSZIPpHsmDF6k=",
 			"path": "github.com/kelseyhightower/envconfig",
-			"revision": "91921eb4cf999321cdbeebdba5a03555800d493b",
-			"revisionTime": "2016-04-29T16:42:05Z"
+			"revision": "8bf4bbfc795e2c7c8a5ea47b707453ed019e2ad4",
+			"revisionTime": "2017-02-06T22:33:54Z"
 		},
 		{
 			"checksumSHA1": "BM6ZlNJmtKy3GBoWwg2X55gnZ4A=",
@@ -106,6 +282,13 @@
 			"revisionTime": "2016-01-26T18:01:36Z"
 		},
 		{
+			"checksumSHA1": "6qI8HIHUPhGyRyxhe3Ds6N1pgUo=",
+			"origin": "github.com/docker/docker/vendor/github.com/opencontainers/go-digest",
+			"path": "github.com/opencontainers/go-digest",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
 			"checksumSHA1": "BMjSRH5mPFsBz4Z1r9f/MzwVlXA=",
 			"path": "github.com/pierrec/lz4",
 			"revision": "5c9560bfa9ace2bf86080bf40d46b34ae44604df",
@@ -118,22 +301,51 @@
 			"revisionTime": "2016-01-12T16:53:51Z"
 		},
 		{
+			"checksumSHA1": "cozq4/7ioFamHmCA2IfgA1c+5Gc=",
+			"origin": "github.com/docker/docker/vendor/github.com/pkg/errors",
+			"path": "github.com/pkg/errors",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
 			"checksumSHA1": "KAzbLjI9MzW2tjfcAsK75lVRp6I=",
 			"path": "github.com/rcrowley/go-metrics",
 			"revision": "1f30fe9094a513ce4c700b9a54458bbb0c96996c",
 			"revisionTime": "2016-11-28T21:05:44Z"
 		},
 		{
+			"checksumSHA1": "zmC8/3V4ls53DJlNTKDZwPSC/dA=",
+			"origin": "github.com/thbkrkr/qli/h2k2h/vendor/github.com/satori/go.uuid",
+			"path": "github.com/satori/go.uuid",
+			"revision": "aa9693ffb2409c7b214a15391ff2a00614e43a48",
+			"revisionTime": "2017-03-02T23:04:31Z"
+		},
+		{
 			"checksumSHA1": "YiInxroBjtcCwcpSZaV1R6UHkwI=",
 			"path": "github.com/thbkrkr/go-utilz/http",
-			"revision": "3f9af93ac624e87ce4e78fdaec4502c7b64ad098",
-			"revisionTime": "2016-12-03T17:12:20Z"
+			"revision": "3803d6c9358c4961cd383ed1a8cbca05ded57e42",
+			"revisionTime": "2017-03-09T01:24:25Z"
 		},
 		{
 			"checksumSHA1": "5ARrN3Zq+E9zazFb/N+b08Serys=",
+			"origin": "github.com/docker/docker/vendor/golang.org/x/net/context",
 			"path": "golang.org/x/net/context",
 			"revision": "6acef71eb69611914f7a30939ea9f6e194c78172",
 			"revisionTime": "2016-02-25T17:50:37Z"
+		},
+		{
+			"checksumSHA1": "WHc3uByvGaMcnSoI21fhzYgbOgg=",
+			"origin": "github.com/docker/docker/vendor/golang.org/x/net/context/ctxhttp",
+			"path": "golang.org/x/net/context/ctxhttp",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
+		},
+		{
+			"checksumSHA1": "LvdVRE0FqdR68SvVpRkHs1rxhcA=",
+			"origin": "github.com/docker/docker/vendor/golang.org/x/net/proxy",
+			"path": "golang.org/x/net/proxy",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
 		},
 		{
 			"checksumSHA1": "xvuVB+aMh4udpinGsmtK31pcWC0=",
@@ -142,10 +354,18 @@
 			"revisionTime": "2016-02-25T17:50:37Z"
 		},
 		{
-			"checksumSHA1": "MlTI84eWAFvqeRgXxBtjRYHk1yQ=",
+			"checksumSHA1": "uTQtOqR0ePMMcvuvAIksiIZxhqU=",
+			"origin": "github.com/Sirupsen/logrus/vendor/golang.org/x/sys/unix",
 			"path": "golang.org/x/sys/unix",
-			"revision": "30237cf4eefd639b184d1f2cb77a581ea0be8947",
-			"revisionTime": "2016-11-19T15:29:01Z"
+			"revision": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d",
+			"revisionTime": "2017-01-13T01:19:11Z"
+		},
+		{
+			"checksumSHA1": "fpW2dhGFC6SrVzipJx7fjg2DIH8=",
+			"origin": "github.com/docker/docker/vendor/golang.org/x/sys/windows",
+			"path": "golang.org/x/sys/windows",
+			"revision": "0b9fddb7899cc66543bc357e92111c308d8eb441",
+			"revisionTime": "2017-03-02T17:23:28Z"
 		},
 		{
 			"checksumSHA1": "39V1idWER42Lmcmg2Uy40wMzOlo=",
