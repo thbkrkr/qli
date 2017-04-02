@@ -15,7 +15,7 @@ func Pub(c *gin.Context) {
 		return
 	}
 
-	pub, err = q.AsyncPubOn(topic)
+	pub, err := q.AsyncPubOn(topic)
 	if err != nil {
 		c.JSON(500, gin.H{"message": err.Error()})
 		return

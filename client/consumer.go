@@ -60,6 +60,7 @@ func (q *Qlient) newConsumer(topic string) (chan []byte, error) {
 				"partition": msg.Partition,
 				"offset":    msg.Offset,
 				"topic":     msg.Topic,
+				"value":     string(msg.Value),
 			}).Debug("Consume successful")
 		}
 	}(consumer, sub)

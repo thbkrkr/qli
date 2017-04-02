@@ -166,7 +166,7 @@ $ws('/ws?topic='+topic,
 
 function onmessage(event) {
   try {
-    event = JSON.parse(JSON.parse(event.data))
+    event = JSON.parse(event.data)
   } catch (e) {
     // break
     return

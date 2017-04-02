@@ -1,6 +1,6 @@
 
 dev:
-	go run api.go
+	go run *.go
 
 build: build-binary
 	doo b

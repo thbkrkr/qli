@@ -67,7 +67,7 @@ func (q *Qlient) PubOn(topic string) (chan []byte, error) {
 			log.WithFields(log.Fields{
 				"partition": partition,
 				"offset":    offset,
-				"value":     value,
+				"value":     string(value),
 				"topic":     topic,
 			}).Debug("Produce successful")
 
@@ -110,7 +110,6 @@ func (q *Qlient) AsyncPubOn(topic string) (chan []byte, error) {
 				log.WithFields(log.Fields{
 					"offset":    success.Offset,
 					"partition": success.Partition,
-					"value":     success.Value,
 				}).Debug("Async produce successful")
 			}
 		}()
@@ -136,7 +135,6 @@ func (q *Qlient) AsyncPubOn(topic string) (chan []byte, error) {
 			in <- msg
 
 			log.WithFields(log.Fields{
-				//"value": value,
 				"topic": topic,
 			}).Debug("Produce sent")
 		}

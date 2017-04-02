@@ -18,15 +18,12 @@ var (
 	gitCommit = "dev"
 	port      = 4242
 
-	//h     hub
-	q   *client.Qlient
-	pub chan []byte
-
+	q    *client.Qlient
 	hubs = map[string]*hub{}
-	//subs = map[string]chan string{}
 )
 
 func main() {
+	//log.SetLevel(log.DebugLevel)
 	hostname, _ := os.Hostname()
 
 	var err error
@@ -54,7 +51,7 @@ func router(r *gin.Engine) {
 		log.WithField("topic", topic).Info("Start sub to ws")
 
 		handler := websocket.Handler(func(ws *websocket.Conn) {
-			log.WithField("topic", topic).Info("Should be register!")
+			log.WithField("topic", topic).Info("Start WS")
 			wsCtl.WsPub(ws, topic)
 		})
 		handler.ServeHTTP(c.Writer, c.Request)
@@ -74,13 +71,11 @@ func SubWs(topic string) {
 		return
 	}
 
-	h := getHub(topic)
-
-	go func(hb *hub) {
-		for event := range sub {
-			log.WithField("topic", h.topic).WithField("event", event).
-				Info("Broadcast kafka event to ws")
-			hb.broadcast <- event
+	go func(h *hub) {
+		for msg := range sub {
+			log.WithField("topic", h.topic).WithField("msg", string(msg)).
+				Info("Broadcast kafka msg to the hub")
+			h.broadcast <- msg
 		}
-	}(h)
+	}(getHub(topic))
 }

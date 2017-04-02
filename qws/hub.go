@@ -8,12 +8,13 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+// Broadcast messages to all connected websockets
 type hub struct {
 	topic      string
 	conns      map[*websocket.Conn]bool
-	broadcast  chan []byte
 	unregister chan *websocket.Conn
 	register   chan *websocket.Conn
+	broadcast  chan []byte
 }
 
 func getHub(topic string) *hub {
@@ -27,7 +28,7 @@ func getHub(topic string) *hub {
 			unregister: make(chan *websocket.Conn),
 		}
 		hubs[topic] = h
-		log.WithField("topic", topic).Info("run hub")
+		log.WithField("topic", topic).Debug("Run new hub")
 		go h.run(topic)
 	}
 
@@ -38,46 +39,36 @@ func (h *hub) run(topic string) {
 	for {
 		select {
 		case c := <-h.register:
-			log.WithField("topic", topic).Info("hub unregister")
+			log.WithField("topic", topic).Debug("WS registered from the hub")
 			h.conns[c] = true
 
 		case c := <-h.unregister:
-			log.WithField("topic", topic).Info("hub unregister")
+			log.WithField("topic", topic).Debug("WS unregistered from the hub")
 			_, ok := h.conns[c]
 			if ok {
 				delete(h.conns, c)
 			}
 
-		case event := <-h.broadcast:
-			log.WithField("topic", topic).Info("hub broadcast")
-			//KafkaMsgOut.Mark(1)
-			h.broadcastEvent(event)
+		case msg := <-h.broadcast:
+			log.WithField("topic", topic).WithField("msg", string(msg)).Debug("Broadcast msg from the hub")
+			h.broadcastMsg(msg)
 		}
 	}
 }
 
-func (h *hub) broadcastEvent(event []byte) {
-	log.Debugf("Broadcast events to %d conns", len(h.conns))
+func (h *hub) broadcastMsg(msg []byte) {
+	log.Infof("Broadcast msg to %d conns", len(h.conns))
 	for ws := range h.conns {
-		if err := websocket.JSON.Send(ws, event); err != nil {
+		if err := websocket.Message.Send(ws, string(msg)); err != nil {
 			if strings.Contains(err.Error(), "write: broken pipe") || err == io.EOF {
 				delete(h.conns, ws)
 				ws.Close()
+				log.Debug("Force WS unregistered from the hub")
 				continue
 			}
-			log.WithError(err).Error("Sending message to ws received from kafka")
+			log.WithError(err).Error("Fail to send kafka message to ws")
 			continue
 		}
-		//WsMsgOut.Mark(1)
-
-		/*select {
-		  case c.send <- []byte(event):
-		    break
-
-		  // We can't reach the client
-		  default:
-		    close(c.send)
-		    delete(h.clients, c)
-		  }*/
+		log.Debug("Msg send to ws")
 	}
 }
