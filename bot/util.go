@@ -17,10 +17,10 @@ func env(name string) string {
 	return value
 }
 
-func (b *Bot) Say(message string, b64 bool) string {
+func (b *Bot) Say(message string, b64 bool) []byte {
 	// TODO: improve
-	return fmt.Sprintf(`{"user": "%s", "message":"%s", "b64":"%t"}`, b.Name,
-		strings.Replace(strings.TrimSpace(message), "\n", "", -1), b64)
+	return []byte(fmt.Sprintf(`{"user": "%s", "message":"%s", "b64":"%t"}`, b.Name,
+		strings.Replace(strings.TrimSpace(message), "\n", "", -1), b64))
 }
 
 type Event struct {
@@ -28,9 +28,9 @@ type Event struct {
 	Message string `json:"message"`
 }
 
-func unmarshal(value string) (*Event, error) {
+func unmarshal(value []byte) (*Event, error) {
 	var event Event
-	if err := json.Unmarshal([]byte(value), &event); err != nil {
+	if err := json.Unmarshal(value, &event); err != nil {
 		return nil, err
 	}
 	return &event, nil

@@ -20,7 +20,11 @@ type Message struct {
 	Message string `json:"message"`
 }
 
-func (ct *WsCtrl) Consume(ws *websocket.Conn, topic string) {
+func (ct *WsCtrl) WsPub(ws *websocket.Conn, topic string) {
+	log.WithField("topic", topic).Info("register ws in hub")
+	h := getHub(topic)
+	h.register <- ws
+
 	defer func() {
 		h.unregister <- ws
 		ws.Close()
@@ -28,13 +32,13 @@ func (ct *WsCtrl) Consume(ws *websocket.Conn, topic string) {
 
 	// Send each message received from the websocket to Kafka
 
-	kafkaPub, err := ct.Q.PubByTopic(topic)
+	log.WithField("topic", topic).Info("create pub kafka for receive ws")
+	kafkaPub, err := ct.Q.PubOn(topic)
 	if err != nil {
 		log.WithError(err).Fatal("Fail to create pub qlient")
 		return
 	}
 
-	//go func() {
 	for {
 		var msg Message
 
@@ -46,27 +50,27 @@ func (ct *WsCtrl) Consume(ws *websocket.Conn, topic string) {
 			log.WithError(err).Error("Fail to receive ws json message")
 			break
 		}
-		//WsMsgIn.Mark(1)
 
 		bytes, err := json.Marshal(msg)
 		if err != nil {
 			log.WithError(err).WithField("message", msg).Error("Fail to marshal JSON")
 		}
 
-		kafkaPub <- string(bytes)
-		//KafkaMsgIn.Mark(1)
+		log.WithField("topic", topic).Info("pub new message in kafka")
 
+		kafkaPub <- bytes
+
+		// Default commands
 		switch {
 		case msg.Message == "ping":
-			kafkaPub <- `{"user": "qws~bot-bot1", "message":"pong"}`
+			kafkaPub <- []byte(`{"user": "qws~bot-bot1", "message":"pong"}`)
 			break
 		case msg.Message == "who":
 			nconn := fmt.Sprintf("%d", len(h.conns))
-			kafkaPub <- `{"user": "qws~bot-bot1", "message":"` + nconn + ` connections"}`
+			kafkaPub <- []byte(`{"user": "qws~bot-bot1", "message":"` + nconn + ` connections"}`)
 			break
 		}
 	}
-	//}()
 
 	// Send each message received from Kafka to the websocket
 
@@ -96,7 +100,9 @@ func (ct *WsCtrl) Consume(ws *websocket.Conn, topic string) {
 }
 
 func (ct *WsCtrl) RawStream(c *gin.Context) {
-	kafkaSub, err := ct.Q.Sub()
+	topic := c.Param("topic")
+
+	kafkaSub, err := ct.Q.SubOn(topic)
 	if err != nil {
 		log.WithError(err).Fatal("Fail to create sub qlient")
 		c.JSON(400, gin.H{"error": err.Error()})
@@ -106,7 +112,7 @@ func (ct *WsCtrl) RawStream(c *gin.Context) {
 	c.Status(200)
 	go func() {
 		for event := range kafkaSub {
-			_, err := c.Writer.Write([]byte(event + "\n"))
+			_, err := c.Writer.Write(append(event, []byte("\n")...))
 			if err != nil {
 				log.WithError(err).Error("Fail to send message")
 				break

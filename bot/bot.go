@@ -15,8 +15,8 @@ type Bot struct {
 	commands map[string]command
 
 	q   *client.Qlient
-	Pub chan string
-	sub <-chan string
+	Pub chan []byte
+	sub <-chan []byte
 }
 
 type command func(...string) (string, error)

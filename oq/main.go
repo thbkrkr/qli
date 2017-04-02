@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -18,34 +19,53 @@ var (
 
 	produceStream bool
 	topic         string
+	consumerGroup string
+
+	initialOldestOffset     bool
+	forceToConsumeFromStart bool
 )
 
 func init() {
 	flag.BoolVar(&produceStream, "s", false, "Enable produce stream")
-	flag.StringVar(&topic, "t", "", "Topic (override $T)")
+	flag.StringVar(&topic, "t", "", "Topic (default: $T)")
+	flag.StringVar(&name, "n", "", "Name used to suffix the consumer group (default: oq-<hostname>)")
+	flag.BoolVar(&initialOldestOffset, "o", false, "Start to the oldest offset (default: newest)")
 	flag.Parse()
 }
 
 func main() {
 	hostname, _ := os.Hostname()
 
-	if topic != "" {
-		os.Setenv("T", topic)
+	if topic == "" {
+		topic = os.Getenv("T")
+		if topic == "" {
+			handlErr(errors.New("Empty topic"), "Fail to start oq")
+		}
+	}
+	os.Setenv("T", topic)
+
+	clientName := fmt.Sprintf("%s-%s", "oq", hostname)
+	if name != "" {
+		clientName = name
 	}
 
-	q, err := client.NewClientFromEnv(fmt.Sprintf("%s-%s", "oq", hostname))
+	if initialOldestOffset {
+		os.Setenv("INITIAL_OFFSET_OLDEST", "true")
+	}
+
+	q, err := client.NewClientFromEnv(clientName)
 	handlErr(err, "Fail to create qli client")
 
 	// Consume to stdout
 
 	if nothingInStdin() {
-		sub, err := q.Sub()
+		sub, err := q.SubOn(topic)
 		handlErr(err, "Fail to create qli consumer")
 
 		go q.CloseOnSig()
 
 		for msg := range sub {
-			fmt.Println(msg)
+			fmt.Println(string(msg))
 		}
 
 		return
@@ -59,27 +79,29 @@ func main() {
 
 	stdin := bufio.NewScanner(os.Stdin)
 	stdin.Scan()
-	q.Send(stdin.Text())
+	q.SendOn(topic, stdin.Bytes())
 
+	// Async pub
 	if produceStream {
-		pub, err := q.AsyncPub()
+		pub, err := q.AsyncPubOn(topic)
 		handlErr(err, "Fail to create qli producer")
 
 		stdin := bufio.NewScanner(os.Stdin)
 		for stdin.Scan() {
-			pub <- stdin.Text()
+			pub <- stdin.Bytes()
 		}
 		if err := stdin.Err(); err != nil {
 			handlErr(err, "Fail to read stdin")
 		}
 
+		// Sync pub
 	} else {
-		pub, err := q.Pub()
+		pub, err := q.PubOn(topic)
 		handlErr(err, "Fail to create qli producer")
 
 		stdin := bufio.NewScanner(os.Stdin)
 		for stdin.Scan() {
-			pub <- stdin.Text()
+			pub <- stdin.Bytes()
 		}
 		if err := stdin.Err(); err != nil {
 			handlErr(err, "Fail to read stdin")

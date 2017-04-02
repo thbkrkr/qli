@@ -66,7 +66,7 @@ func main() {
 
 type TasksExecutor struct {
 	name  string
-	pub   chan<- string
+	pub   chan<- []byte
 	tasks map[string]Task
 	lock  sync.RWMutex
 	total int
@@ -183,20 +183,20 @@ func (e *TasksExecutor) markTaskInError(taskID string) {
 	e.tasks[taskID] = t
 }
 
-func displayCmd(taskID string, user string, argz string) string {
-	return fmt.Sprintf(
+func displayCmd(taskID string, user string, argz string) []byte {
+	return []byte(fmt.Sprintf(
 		`{"user": "%s", "message":"%s", "b64":"%t"}`,
 		user,
 		`<pre id='task-`+botID+"-"+taskID+`'>&gt; `+argz+`</pre>`,
-		false)
+		false))
 }
 
-func displayLine(taskID string, user string, line string) string {
-	return fmt.Sprintf(
+func displayLine(taskID string, user string, line string) []byte {
+	return []byte(fmt.Sprintf(
 		`{"user": "%s", "message":"%s", "b64":"%t", "id":"#task-%s-%s"}`,
 		user,
 		base64.StdEncoding.EncodeToString([]byte(line)),
-		true, botID, taskID)
+		true, botID, taskID))
 }
 
 func (e *TasksExecutor) ps() (string, error) {

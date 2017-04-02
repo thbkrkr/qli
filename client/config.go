@@ -18,9 +18,9 @@ type Config struct {
 	Brokers string `envconfig:"b" required:"true"`
 	Topic   string `envconfig:"t" required:"true"`
 
-	Key      string `envconfig:"k"`
 	User     string `envconfig:"u"`
 	Password string `envconfig:"p"`
+	Key      string `envconfig:"k"`
 
 	GroupID string `envconfig:"g"`
 
@@ -40,12 +40,12 @@ func newConfigFromEnv(name string) (*Config, error) {
 
 	conf.Name = name
 
-	// If no password, use K as client.id by setting the use
-	// sasl
+	// If no password, use the key as client.id
 	if conf.Password == "" {
 		conf.User = conf.Key
 	}
 
+	// If no consumer group id, use the user suffixed by the name
 	if conf.GroupID == "" {
 		conf.GroupID = conf.User + "." + name
 	}
@@ -71,20 +71,16 @@ func newSaramaConfig(user string, password string) *sarama.Config {
 
 func newSaramaClusterConfig(user string, password string) *cluster.Config {
 	clusterConfig := cluster.NewConfig()
-	clusterConfig.ClientID = user
-	clusterConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
-	clusterConfig.Consumer.Return.Errors = true
+	clusterConfig.Config = *newSaramaConfig(user, password)
+
 	clusterConfig.Group.Return.Notifications = true
-
-	if password == "" {
-		return clusterConfig
+	clusterConfig.Consumer.Return.Errors = true
+	clusterConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
+	if os.Getenv("INITIAL_OFFSET_OLDEST") == "true" {
+		clusterConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
+	} else {
+		clusterConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
 	}
-
-	clusterConfig.ClientID = user
-	clusterConfig.Net.TLS.Enable = true
-	clusterConfig.Net.SASL.Enable = true
-	clusterConfig.Net.SASL.User = user
-	clusterConfig.Net.SASL.Password = password
 
 	return clusterConfig
 }

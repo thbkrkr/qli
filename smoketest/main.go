@@ -11,12 +11,19 @@ import (
 	"github.com/thbkrkr/qli/client"
 )
 
-var totalMessages = 3
+var (
+	name          = "smoketest"
+	totalMessages = 3
+)
 
 func main() {
+	logrus.SetLevel(logrus.DebugLevel)
+
 	done := make(chan bool)
 
-	q, err := client.NewClientFromEnv(fmt.Sprintf("qing-%d", rand.Intn(666)))
+	os.Setenv("INITIAL_OFFSET_OLDEST", "true")
+
+	q, err := client.NewClientFromEnv(fmt.Sprintf("%s-%d", name, rand.Intn(666)))
 	handlErr(err, fmt.Sprintf("Fail to create qli client"))
 
 	logrus.WithFields(logrus.Fields{
@@ -31,16 +38,12 @@ func main() {
 		consume(q, done, randNum)
 	}()
 
-	time.Sleep(time.Duration(200) * time.Millisecond)
-
 	// Start to produce
 	for i := 0; i < totalMessages; i++ {
 		produce(q, randNum)
 	}
 
 	<-done
-
-	logrus.Debug("Close")
 	q.Close()
 }
 
@@ -50,18 +53,15 @@ type Test struct {
 }
 
 func produce(qli *client.Qlient, randNum int64) {
-	test := Test{
+	msg, err := json.Marshal(Test{
 		Timestamp: unixTimestamp(),
 		RandNum:   randNum,
-	}
-	bmsg, err := json.Marshal(test)
+	})
 	handlErr(err, "Fail to marshal Test struct")
 
-	msg := string(bmsg)
 	_, _, err = qli.Send(msg)
 	handlErr(err, "Fail to send test message")
-
-	logrus.WithField("msg", msg).Debug("Produce")
+	logrus.WithField("msg", string(msg)).Debug("Produce")
 }
 
 func consume(qli *client.Qlient, done chan bool, randNum int64) {
@@ -72,10 +72,8 @@ func consume(qli *client.Qlient, done chan bool, randNum int64) {
 	for msg := range sub {
 
 		var test Test
-		err := json.Unmarshal([]byte(msg), &test)
+		err := json.Unmarshal(msg, &test)
 		handlErr(err, "Fail to unmarshal Test struct")
-
-		logrus.Debugf("%v", test)
 
 		isOk := test.RandNum == randNum
 
@@ -97,8 +95,6 @@ func consume(qli *client.Qlient, done chan bool, randNum int64) {
 func unixTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
-
-// --
 
 func handlErr(err error, context string) {
 	if err != nil {

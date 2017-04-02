@@ -16,15 +16,11 @@ type Qlient struct {
 
 	syncProducer  sarama.SyncProducer
 	asyncProducer sarama.AsyncProducer
+	consumers     map[string]*cluster.Consumer
 
-	consumer        *cluster.Consumer
-	consumerGroupID string
-
-	pub    chan string
-	pubMsg chan []byte
-	sub    chan string
-	subMsg chan *sarama.ConsumerMessage
-	err    chan error
+	err  chan error
+	pub  chan []byte
+	subs map[string]chan []byte
 
 	IsClosed bool
 }
@@ -47,9 +43,11 @@ func NewClient(conf *Config) (*Qlient, error) {
 	}
 
 	return &Qlient{
-		config:   conf,
-		err:      make(chan error),
-		IsClosed: false,
+		config:    conf,
+		consumers: map[string]*cluster.Consumer{},
+		err:       make(chan error),
+		subs:      map[string]chan []byte{},
+		IsClosed:  false,
 	}, nil
 }
 
@@ -57,7 +55,7 @@ func NewClient(conf *Config) (*Qlient, error) {
 func (q *Qlient) Recover() {
 	if r := recover(); r != nil {
 		if q.IsClosed && r == "send on closed channel" {
-			os.Exit(0)
+			logrus.Info("Recover while sending message on closed channel")
 		}
 	}
 }
@@ -76,8 +74,8 @@ func (q *Qlient) CloseOnSig() {
 func (q *Qlient) Close() {
 	q.IsClosed = true
 
-	q.closeConsumer()
-	q.closeProducer()
+	q.closeConsumers()
+	q.closeProducers()
 
 	if q.err != nil {
 		close(q.err)
