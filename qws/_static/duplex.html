@@ -16,15 +16,21 @@
 
 </style>
 
-<div class="box">
-  <iframe src="http://io:4242/s/?topic=thbkrkr.miaou" frameborder="0" scrolling="no" width="100%" height="712" align="left"></iframe>
-</div>
-
-<div class="box">
-  <iframe src="http://io:4242/s/?topic=thbkrkr.events" frameborder="0" scrolling="no" width="100%" height="712" align="right"></iframe>
-</div>
+<div id="main"></div>
 
 <script src="https://thbkrkr.github.io/s.js/dist/s.11.ef9e3d2.zm.js"></script>
 <script>
+
+function box(topic) {
+  return `<div class="box">
+    <iframe src="`+document.location.origin+`/s/?topic=`+topic+`"
+      frameborder="0" scrolling="no" width="100%" height="712" align="left"></iframe>
+  </div>`
+}
+
+t1 = $param('t1') || 'thbkrkr.admin'
+t2 = $param('t2') || 'thbkrkr.miaou'
+
+document.getElementById('main').innerHTML = box(t1) + box(t2)
 
 </script></body></html>

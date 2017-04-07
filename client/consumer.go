@@ -32,9 +32,8 @@ func (q *Qlient) newConsumer(topic string) (chan []byte, error) {
 		return nil, err
 	}
 
-	sub := make(chan []byte)
 	q.consumers[topic] = consumer
-	q.subs[topic] = sub
+	q.subs[topic] = make(chan []byte)
 
 	go func(c *cluster.Consumer) {
 		for err := range c.Errors() {
@@ -63,10 +62,10 @@ func (q *Qlient) newConsumer(topic string) (chan []byte, error) {
 				"value":     string(msg.Value),
 			}).Debug("Consume successful")
 		}
-	}(consumer, sub)
+	}(consumer, q.subs[topic])
 
 	log.Debug("Start to consume topic " + topic)
-	return sub, nil
+	return q.subs[topic], nil
 }
 
 func (q *Qlient) closeConsumers() {

@@ -14,13 +14,14 @@ import (
 type Qlient struct {
 	config *Config
 
-	syncProducer  sarama.SyncProducer
-	asyncProducer sarama.AsyncProducer
-	consumers     map[string]*cluster.Consumer
+	syncProducers  map[string]sarama.SyncProducer
+	asyncProducers map[string]sarama.AsyncProducer
+	consumers      map[string]*cluster.Consumer
 
-	err  chan error
-	pub  chan []byte
-	subs map[string]chan []byte
+	err   chan error
+	pubs  map[string]chan []byte
+	apubs map[string]chan []byte
+	subs  map[string]chan []byte
 
 	IsClosed bool
 }
@@ -43,11 +44,15 @@ func NewClient(conf *Config) (*Qlient, error) {
 	}
 
 	return &Qlient{
-		config:    conf,
-		consumers: map[string]*cluster.Consumer{},
-		err:       make(chan error),
-		subs:      map[string]chan []byte{},
-		IsClosed:  false,
+		config:         conf,
+		syncProducers:  map[string]sarama.SyncProducer{},
+		asyncProducers: map[string]sarama.AsyncProducer{},
+		consumers:      map[string]*cluster.Consumer{},
+		err:            make(chan error),
+		pubs:           map[string]chan []byte{},
+		apubs:          map[string]chan []byte{},
+		subs:           map[string]chan []byte{},
+		IsClosed:       false,
 	}, nil
 }
 
