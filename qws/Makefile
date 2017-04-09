@@ -2,8 +2,10 @@
 dev:
 	go run *.go
 
-build: build-binary
-	doo b
+all: build-binary build
+
+build:
+	docker build --rm -t krkr/qws --label SHA1=$$(git rev-parse --short HEAD) .
 
 build-binary:
 	docker run --rm \

@@ -68,6 +68,20 @@ func (q *Qlient) newConsumer(topic string) (chan []byte, error) {
 	return q.subs[topic], nil
 }
 
+func (q *Qlient) CloseConsumer(topic string) {
+	c, ok := q.consumers[topic]
+	if ok {
+		if err := c.Close(); err != nil {
+			log.WithError(err).Error("Fail to close consumer")
+			q.err <- err
+		}
+	}
+	sub, ok := q.subs[topic]
+	if ok {
+		close(sub)
+	}
+}
+
 func (q *Qlient) closeConsumers() {
 	for _, c := range q.consumers {
 		if c != nil {
