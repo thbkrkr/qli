@@ -1,0 +1,43 @@
+<!doctype html>
+<html><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>miaou</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" type="image/png" href="/s/img/favicon.ico">
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.7/semantic.min.css">
+</head><body>
+
+<style>
+.box {
+  float: left;
+  width: 50%;
+}
+
+.box.bottom-left {
+  position: absolute;
+  top: 356px;
+  left: 0;
+}
+
+</style>
+
+<div id="main"></div>
+
+<script src="https://thbkrkr.github.io/s.js/dist/s.11.ef9e3d2.zm.js"></script>
+<script>
+
+function box(topic, height, clazz) {
+  return `<div class="box `+clazz+`">
+    <iframe src="`+document.location.origin+`/s/?topic=`+topic+`"
+      frameborder="0" scrolling="no" width="100%" height="`+height+`" align="left"></iframe>
+  </div>`
+}
+
+t1 = $param('t1') || 'thbkrkr.admin'
+t2 = $param('t2') || 'thbkrkr.events'
+t3 = $param('t3') || 'thbkrkr.logs'
+
+document.getElementById('main').innerHTML = box(t1, 356) + box(t2, 712) + box(t3, 356, 'bottom-left')
+
+</script></body></html>
