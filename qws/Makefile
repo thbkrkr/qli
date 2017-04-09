@@ -2,7 +2,7 @@
 dev:
 	go run *.go
 
-all: build-binary build
+all: build-binary build push
 
 build:
 	docker build --rm -t krkr/qws --label SHA1=$$(git rev-parse --short HEAD) .
@@ -15,6 +15,9 @@ build-binary:
 		-e GOPATH=/go \
 		-w /go/src/github.com/thbkrkr/qli/qws \
 			golang:1.8.0 go build
+
+push:
+	docker push krkr/qws
 
 run:
 	docker run --rm -p 80:4242 krkr/miaou \
