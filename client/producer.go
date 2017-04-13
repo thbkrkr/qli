@@ -9,7 +9,7 @@ import (
 )
 
 // Send produces one message
-/*func (q *Qlient) Send(data []byte) (partition int32, offset int64, err error) {
+func (q *Qlient) Send(data []byte) (partition int32, offset int64, err error) {
 	return q.SendOn(q.config.Topic, data)
 }
 
@@ -28,7 +28,7 @@ func (q *Qlient) SendOn(topic string, msg []byte) (partition int32, offset int64
 		Topic: topic,
 		Value: sarama.ByteEncoder(msg),
 	})
-}*/
+}
 
 // Pub returns a channel to publish messages
 func (q *Qlient) Pub() (chan []byte, error) {
