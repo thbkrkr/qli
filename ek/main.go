@@ -97,7 +97,7 @@ func (e *TasksExecutor) execCommand(args []string) {
 
 	e.startTask(taskID, cmdArgs)
 
-	// Display the command to execute in a pre with the command id
+	// Display the command to execute in a <pre> with the task id
 	e.pub <- displayCmd(taskID, e.name, cmdArgs)
 
 	log.WithField("cmd", args).Info("exec cmd")
@@ -115,7 +115,7 @@ func (e *TasksExecutor) execCommand(args []string) {
 		return
 	}
 
-	// Stream command execution
+	// Stream command execution and attach stdin/stderr to the <pre> using the task id
 	scanner := bufio.NewScanner(stdoutReader)
 	go func() {
 		for scanner.Scan() {

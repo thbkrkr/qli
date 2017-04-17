@@ -61,42 +61,49 @@ func (b *Bot) Start() {
 	b.Pub <- b.Say("Yo!", false)
 
 	for data := range b.sub {
+		log.WithField("data", string(data)).Debug("get event")
 		event, err := unmarshal(data)
 		if err != nil {
 			// skip
 			continue
 		}
+		log.WithField("event", event).Debug("get event")
 
-		args := strings.Split(event.Message, " ")
+		// skip self message
+		if event.User == b.Name {
+			continue
+		}
 
 		var cmd command
-		var funcName string
+		message := strings.Split(event.Message, " ")
+
 		// try with 2 args first
-		if len(args) > 1 {
-			funcName = args[0] + " " + args[1]
-			cmd = b.commands[funcName]
+		if len(message) > 1 {
+			cmd = b.commands[message[0]+" "+message[1]]
 		}
+		// try with 1 arg
 		if cmd == nil {
-			funcName = args[0]
-			cmd = b.commands[funcName]
+			cmd = b.commands[message[0]]
 		}
+		// skip if no command found
 		if cmd == nil {
+			log.WithField("message", message).Debug("cmd nil")
 			// skip
 			continue
 		}
 
-		if event.User != b.Name && cmd != nil {
-			go func(p []string) {
-				resp, err := cmd(p...)
-				if resp == "" {
-					resp = "Ok. Empty response."
-				}
-				if err != nil {
-					resp = err.Error()
-				}
-				b.Pub <- b.Say(resp, false)
-			}(args[1:])
-		}
+		// execute the command
+		go func(args []string) {
+			resp, err := cmd(args...)
+			if resp == "" {
+				// nothing to return
+				return
+			}
+			if err != nil {
+				resp = err.Error()
+			}
+			b.Pub <- b.Say(resp, false)
+		}(message[1:])
 	}
 
 }

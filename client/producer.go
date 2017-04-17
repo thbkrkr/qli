@@ -116,7 +116,7 @@ func (q *Qlient) AsyncPubOn(topic string) (chan []byte, error) {
 		}()
 	}
 
-	//q.apubs[topic] := make(chan []byte)
+	q.apubs[topic] = make(chan []byte)
 
 	// Listen pub and send received messages
 	go func(in chan<- *sarama.ProducerMessage, p chan []byte) {

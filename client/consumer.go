@@ -52,15 +52,16 @@ func (q *Qlient) newConsumer(topic string) (chan []byte, error) {
 		for msg := range c.Messages() {
 			c.MarkOffset(msg, q.config.GroupID)
 
-			// Send kafka messages in the sub channel
-			s <- msg.Value
-
 			log.WithFields(log.Fields{
 				"partition": msg.Partition,
 				"offset":    msg.Offset,
 				"topic":     msg.Topic,
 				"value":     string(msg.Value),
 			}).Debug("Consume successful")
+
+			// Send kafka messages in the sub channel
+			s <- msg.Value
+
 		}
 	}(consumer, q.subs[topic])
 
