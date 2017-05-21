@@ -16,10 +16,10 @@
 			"revisionTime": "2016-12-20T18:06:09Z"
 		},
 		{
-			"checksumSHA1": "dGXnnR7ZhsrZNnEqFimk6q7YCqs=",
+			"checksumSHA1": "m+iiamnbukzE8kFPfBche6D0FmQ=",
 			"path": "github.com/Sirupsen/logrus",
-			"revision": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d",
-			"revisionTime": "2017-01-13T01:19:11Z"
+			"revision": "5b60b3d3ee017ed00bcd0225fcca7acab767844b",
+			"revisionTime": "2017-05-04T07:10:19Z"
 		},
 		{
 			"checksumSHA1": "+tmOxLkLwkVVakYY1XRLjbfawX0=",
@@ -233,29 +233,29 @@
 			"revisionTime": "2016-08-05T00:47:13Z"
 		},
 		{
-			"checksumSHA1": "XxSDNaJf0LpjvMapDmmhNIlf+MQ=",
+			"checksumSHA1": "bvHZOqZm2Gl0XkMh4oOB8iZ7geQ=",
 			"path": "github.com/gin-gonic/gin",
-			"revision": "5caaac4c5c712a9e7a7de29e6c24ef46c753017f",
-			"revisionTime": "2016-04-14T23:39:28Z"
+			"revision": "d5b353c5d5a560322e6d96121c814115562501f7",
+			"revisionTime": "2017-04-28T10:59:23Z"
 		},
 		{
 			"checksumSHA1": "UsILDoIB2S7ra+w2fMdb85mX3HM=",
 			"path": "github.com/gin-gonic/gin/binding",
-			"revision": "5caaac4c5c712a9e7a7de29e6c24ef46c753017f",
-			"revisionTime": "2016-04-14T23:39:28Z"
+			"revision": "d5b353c5d5a560322e6d96121c814115562501f7",
+			"revisionTime": "2017-04-28T10:59:23Z"
 		},
 		{
 			"checksumSHA1": "PHv9FNb7YavJWtAHcY6ZgXmkmHs=",
 			"path": "github.com/gin-gonic/gin/render",
-			"revision": "5caaac4c5c712a9e7a7de29e6c24ef46c753017f",
-			"revisionTime": "2016-04-14T23:39:28Z"
+			"revision": "d5b353c5d5a560322e6d96121c814115562501f7",
+			"revisionTime": "2017-04-28T10:59:23Z"
 		},
 		{
 			"checksumSHA1": "piwYMQqpsfAur670v6rFg6gqk/c=",
 			"origin": "github.com/gin-gonic/gin/vendor/github.com/golang/protobuf/proto",
 			"path": "github.com/golang/protobuf/proto",
-			"revision": "5caaac4c5c712a9e7a7de29e6c24ef46c753017f",
-			"revisionTime": "2016-04-14T23:39:28Z"
+			"revision": "d5b353c5d5a560322e6d96121c814115562501f7",
+			"revisionTime": "2017-04-28T10:59:23Z"
 		},
 		{
 			"checksumSHA1": "W+E/2xXcE1GmJ0Qb784ald0Fn6I=",
@@ -280,6 +280,12 @@
 			"path": "github.com/manucorporat/sse",
 			"revision": "ee05b128a739a0fb76c7ebd3ae4810c1de808d6d",
 			"revisionTime": "2016-01-26T18:01:36Z"
+		},
+		{
+			"checksumSHA1": "U6lX43KDDlNOn+Z0Yyww+ZzHfFo=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "fc9e8d8ef48496124e79ae0df75490096eccf6fe",
+			"revisionTime": "2017-03-22T23:44:13Z"
 		},
 		{
 			"checksumSHA1": "6qI8HIHUPhGyRyxhe3Ds6N1pgUo=",
@@ -317,8 +323,8 @@
 			"checksumSHA1": "zmC8/3V4ls53DJlNTKDZwPSC/dA=",
 			"origin": "github.com/thbkrkr/qli/h2k2h/vendor/github.com/satori/go.uuid",
 			"path": "github.com/satori/go.uuid",
-			"revision": "aa9693ffb2409c7b214a15391ff2a00614e43a48",
-			"revisionTime": "2017-03-02T23:04:31Z"
+			"revision": "6503838647e2b6acda5b920c75d999f907359121",
+			"revisionTime": "2017-05-21T16:40:22Z"
 		},
 		{
 			"checksumSHA1": "YiInxroBjtcCwcpSZaV1R6UHkwI=",
@@ -355,10 +361,10 @@
 		},
 		{
 			"checksumSHA1": "uTQtOqR0ePMMcvuvAIksiIZxhqU=",
-			"origin": "github.com/Sirupsen/logrus/vendor/golang.org/x/sys/unix",
+			"origin": "github.com/docker/docker/vendor/golang.org/x/sys/unix",
 			"path": "golang.org/x/sys/unix",
-			"revision": "61e43dc76f7ee59a82bdf3d71033dc12bea4c77d",
-			"revisionTime": "2017-01-13T01:19:11Z"
+			"revision": "d75a52659825e75fff6158388dddc6a5b04f9ba5",
+			"revisionTime": "2016-12-14T18:38:57Z"
 		},
 		{
 			"checksumSHA1": "fpW2dhGFC6SrVzipJx7fjg2DIH8=",
