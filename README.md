@@ -4,63 +4,67 @@
 
 Some Kafka experiments.
 
-API, bot and oq use env vars:
+Requires configuring the env vars:
 
-```
-export B=broker.com:9092
-export K=specialclientid
+```sh
+export B=k4fk4.io:9093
 export T=topic
+export U=user
+export P=password
 ```
 
-### qli/client
+### qli/oq
 
-Go client to produce and consume.
-
-Create a new client.
-
-```
-qli, err := client.NewClient(brokers, key, topic, name)
-```
-
-Create a new client using the env vars B, K and T.
-
-```
-qli, err := client.NewClientFromEnv()
-```
+Simple CLI to produce and consume data.
 
 Produce:
-
-```
-qli.Send(msg)
+```sh
+> fortune -s | oq
 ```
 
 Consume:
 ```
-for msg range qli.Sub() {
-  // Do something with msg
+> oq
+Today is what happened to yesterday.
+```
+
+### qli/client
+
+A Go client to simply produce and consume.
+
+```go
+// Create client
+q, err := client.NewClientFromEnv(client)
+
+// Produce one message synchronously
+partition, offset, err := q.Send(data)
+
+// Produce messages asynchronously
+pub, err := q.Pub()
+pub, err := q.PubOn(topic)
+
+for stdin.Scan() {
+  pub <- stdin.Bytes()
 }
 
+// Consume messages asynchronously
+sub, err := q.Sub()
+sub, err := q.SubOn(topic)
+
+for msg := range sub {
+  fmt.Println(string(msg))
+}
 ```
 
-### qli/api
+### qli/qws
 
-HTTP API to produce and consume data.
-
-```
-curl -XPOST -H "X-Auth-Key: ${KEY}" \
-  localhost:4242/produce/topic/${TOPIC} \
-  -d '{"message": "'$(date +%s)'"}'
-
-curl -H "X-Auth-Key: ${KEY}" \
-  localhost:4242/consume/topic/${TOPIC}
-```
+Produce or consume in Kafka over WebSockets.
 
 ### qli/bot
 
-Bot to register command, scripts ou go funcs to be executed when
-a message contains a keyword.
+Register scripts or go funcs to be executed when a message contains a string.
 
-```
+```go
 bot.NewBot(fmt.Sprintf("koko-%s-bot", hostname)).
   RegisterScript("bam", "scripts/bam.sh").
   RegisterCmdFunc("ping", func(args ...string) string {
@@ -69,17 +73,3 @@ bot.NewBot(fmt.Sprintf("koko-%s-bot", hostname)).
   Start()
 ```
 
-### qli/oq
-
-Simple cli to produce and consume data.
-
-Consume:
-```
-oq
-```
-
-Produce:
-```
-echo '{"date": "$(date %s)", "message": "'$RANDOM'"}' | \
-  oq
-```
