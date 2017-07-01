@@ -128,7 +128,7 @@ function skin_dark() {
   `
 }
 
-function skin_normal_event(event) {
+function render_event_skin_normal(event) {
   return `
     <div class="comment">
       <div class="avatar">
@@ -146,7 +146,7 @@ function skin_normal_event(event) {
     </div>`
 }
 
-function skin_dark_event(event) {
+function render_skin_dark_event(event) {
   return `
     <div class="message">
       <span class="author"> ` + username(event.user) + ` </span>
@@ -156,12 +156,42 @@ function skin_dark_event(event) {
     </div>`
 }
 
+function render_service_event(event) {
+   id = moment().unix()
+   return `
+    <div class="comment">
+      <div class="avatar">
+        <img src="img/bot.png">
+      </div>
+      <div class="content">
+        <a class="author"> ` + event.Node + ` </a>
+        <div class="metadata">
+          <span class="date">` + moment().fromNow() + `</span>
+        </div>
+        <div class="text short">
+          <span class="clickable" onclick="toggle(`+id+`)">` + event.Html + `</span>
+        </div>
+        <pre class="` + id + ` full" onclick="toggle(`+id+`)" style="display:none"> ` +
+          event.Output + ` </pre>
+      </div>
+    </div>
+    `
+}
+
+function toggle(clazz) {
+  $('.'+clazz).toggle();
+}
+
+function render_generic_event(event) {
+  return `<pre class="message">` + JSON.stringify(event, null, 2) + `</pre>`
+}
+
 $ws('/ws?topic='+topic,
   function onopen() {
     $('#send').attr('placeholder', 'Send a message...')
     event = {user: user, message: "Hello!" }
     ws.send(JSON.stringify(event))
-    $('.comments').append(renderEventAsHTML({
+    $('.comments').append(renderUserMsgEventAsHTML({
       user: 'hello~bot-bot',
       message:'<i>Welcome ' + username(event.user) + '!</i>'
     }))
@@ -180,16 +210,11 @@ function onmessage(event) {
     return
   }
   console.log('event', event)
-  if (!event.message) {
-    console.error(event.message)
-    // break
-    return
-  }
 
   if (event.id) {
     $(event.id).append("\n"+renderCmdOutputAsHTML(event))
   } else {
-    $('.comments').append(renderEventAsHTML(event))
+    $('.comments').append(renderEvent(event))
   }
 
   $scrollToBottom($('.comments'), 100)
@@ -206,7 +231,29 @@ function renderCmdOutputAsHTML(event) {
   return message
 }
 
-function renderEventAsHTML(event) {
+function renderEvent(event) {
+  if (event.user && event.message) {
+    return renderUserMsgEventAsHTML(event)
+  } else
+  if (event.Service && event.Node && event.Status) {
+    return renderServiceEventAsHTML(event)
+  } else {
+    return window["render_generic_event"](event)
+  }
+}
+
+function renderServiceEventAsHTML(event) {
+  if (event.Output) {
+    try {
+      event.Output = atob(event.Output)
+    } catch(e) {
+    }
+  }
+
+  return window["render_service_event"](event)
+}
+
+function renderUserMsgEventAsHTML(event) {
   message = event.message
 
   b64 = /[A-Za-z0-9+/]{14}[A-Za-z0-9+/=]*/
@@ -239,7 +286,7 @@ function renderEventAsHTML(event) {
 
   event.message = message
 
-  return window["skin_" + skin + "_event"](event)
+  return window["render_event_skin_" + skin](event)
 }
 
 function avatar(user) {
