@@ -10,6 +10,8 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+var botName = "qws~bot-bot1"
+
 type WsCtrl struct {
 	Q *client.Qlient
 }
@@ -62,7 +64,7 @@ func (ct *WsCtrl) WsPub(ws *websocket.Conn, topic string) {
 		// Default commands
 		switch {
 		case msg.Message == "ping":
-			kafkaPub <- []byte(`{"user": "qws~bot-bot1", "message":"pong"}`)
+			kafkaPub <- []byte(`{"user": ` + botName + `, "message":"pong"}`)
 			continue
 		case msg.Message == "who":
 			nconn := fmt.Sprintf("%d", len(h.conns))
@@ -71,7 +73,8 @@ func (ct *WsCtrl) WsPub(ws *websocket.Conn, topic string) {
 				info += "<li>" + conn.Request().Header.Get("User-Agent") + "</li>"
 			}
 			info += "</ul>"
-			kafkaPub <- []byte(`{"user": "qws~bot-bot1", "message":"There is ` + nconn + ` connections: ` + info + `"}`)
+			kafkaPub <- []byte(`{"user": ` + botName + `,
+				"message":"There is ` + nconn + ` connection(s): ` + info + `"}`)
 			continue
 		}
 	}

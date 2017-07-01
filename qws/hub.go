@@ -57,7 +57,7 @@ func (h *hub) run(topic string) {
 }
 
 func (h *hub) broadcastMsg(msg []byte) {
-	log.Infof("Broadcast msg to %d conns", len(h.conns))
+	log.Debugf("Broadcast msg to %d conns", len(h.conns))
 	for ws := range h.conns {
 		if err := websocket.Message.Send(ws, string(msg)); err != nil {
 			if strings.Contains(err.Error(), "write: broken pipe") || err == io.EOF {

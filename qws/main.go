@@ -48,10 +48,10 @@ func router(r *gin.Engine) {
 		}
 
 		SubWs(topic)
-		log.WithField("topic", topic).Info("Start sub to ws")
+		log.WithField("topic", topic).Debug("Start sub to ws")
 
 		handler := websocket.Handler(func(ws *websocket.Conn) {
-			log.WithField("topic", topic).Info("Start WS")
+			log.WithField("topic", topic).Debug("Start WS")
 			wsCtl.WsPub(ws, topic)
 		})
 		handler.ServeHTTP(c.Writer, c.Request)
@@ -74,7 +74,7 @@ func SubWs(topic string) {
 	go func(h *hub) {
 		for msg := range sub {
 			log.WithField("topic", h.topic).WithField("msg", string(msg)).
-				Info("Broadcast kafka msg to the hub")
+				Debug("Broadcast kafka msg to the hub")
 			h.broadcast <- msg
 		}
 	}(getHub(topic))
