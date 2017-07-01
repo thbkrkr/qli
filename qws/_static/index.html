@@ -90,8 +90,6 @@ pre {
 topic = $param('topic') || 'thbkrkr.miaou'
 skin  = $param('skin') || 'normal'
 
-console.log(topic)
-
 document.body.innerHTML += window['skin_'+skin]()
 
 bottomSpace = 145
@@ -156,9 +154,34 @@ function render_skin_dark_event(event) {
     </div>`
 }
 
+function uuidgen() {
+    var d = new Date().getTime();
+    var uuid = 'xxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = (d + Math.random()*16)%16 | 0;
+        d = Math.floor(d/16);
+        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+    });
+    return uuid;
+};
+
 function render_service_event(event) {
-   id = moment().unix()
-   return `
+   id =uuidgen()
+
+   if (!event.Html) {
+    if (event.Status == 'OK') {
+      color = 'green'
+    } else {
+      color = 'red'
+    }
+    event.Html = `<a class="ui `+color+` tiny horizontal label">`+event.Status+`</a>`
+      + event.Name
+  }
+
+  if (!event.Output) {
+    event.Output = '<i>(empty)</i>'
+  }
+
+  return `
     <div class="comment">
       <div class="avatar">
         <img src="img/bot.png">
@@ -169,10 +192,10 @@ function render_service_event(event) {
           <span class="date">` + moment().fromNow() + `</span>
         </div>
         <div class="text short">
-          <span class="clickable" onclick="toggle(`+id+`)">` + event.Html + `</span>
+          <span class="clickable" onclick="toggle('`+id+`')">` + event.Html + `</span>
         </div>
-        <pre class="` + id + ` full" onclick="toggle(`+id+`)" style="display:none"> ` +
-          event.Output + ` </pre>
+        <pre class="` + id + ` full" onclick="toggle('`+id+`')" style="display:none"> ` +
+event.Output + `</pre>
       </div>
     </div>
     `
@@ -209,7 +232,7 @@ function onmessage(event) {
     // break
     return
   }
-  console.log('event', event)
+  //console.log('event', event)
 
   if (event.id) {
     $(event.id).append("\n"+renderCmdOutputAsHTML(event))
@@ -244,9 +267,13 @@ function renderEvent(event) {
 
 function renderServiceEventAsHTML(event) {
   if (event.Output) {
-    try {
-      event.Output = atob(event.Output)
-    } catch(e) {
+    b64 = /[A-Za-z0-9+/]{14}[A-Za-z0-9+/=]*/
+    b64Decoded = false
+    if (b64.test(event.Output)) {
+      try {
+        event.Output = atob(event.Output)
+      } catch(e) {
+      }
     }
   }
 
