@@ -18,9 +18,15 @@ func env(name string) string {
 }
 
 func (b *Bot) Say(message string, b64 bool) []byte {
-	// TODO: improve
-	return []byte(fmt.Sprintf(`{"user": "%s", "message":"%s", "b64":"%t"}`, b.Name,
-		strings.Replace(strings.TrimSpace(message), "\n", "", -1), b64))
+	if !strings.Contains(message, `"b64"`) {
+		pattern := `{"user": "%s", "message":"%s", "b64":"%t"}`
+		message = fmt.Sprintf(pattern, b.Name, message, b64)
+	} else {
+		pattern := `{"user": "%s", "message":"%s"}`
+		message = fmt.Sprintf(pattern, b.Name, message)
+	}
+	message = strings.Replace(strings.TrimSpace(message), "\n", "", -1)
+	return []byte(message)
 }
 
 type Event struct {

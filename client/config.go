@@ -41,7 +41,7 @@ func newConfigFromEnv(name string) (*Config, error) {
 	conf.Name = name
 
 	// If no password, use the key as client.id
-	if conf.Password == "" {
+	if conf.Password == "" && conf.Key != "" {
 		conf.User = conf.Key
 	}
 

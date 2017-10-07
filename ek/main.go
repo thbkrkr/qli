@@ -1,17 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"log"
 	"os"
-	"os/exec"
-	"strings"
-	"sync"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/thbkrkr/qli/bot"
+	"github.com/thbkrkr/qli/client"
 )
 
 var (
@@ -19,209 +16,89 @@ var (
 	buildDate = "dev"
 	gitCommit = "dev"
 
-	topic string
-
-	executor TasksExecutor
-
-	botID string
+	botID          string
+	patternBotName = "ek~bot@%s-bot2"
+	cmdTopic       string
+	logsTopic      string
+	executor       *TasksExecutor
 )
 
 func init() {
-	flag.StringVar(&topic, "t", "", "Topic (override $T)")
+	flag.StringVar(&cmdTopic, "cmd-topic", "", "Topic to send command (override $T)")
+	flag.StringVar(&logsTopic, "logs-topic", "", "Topic to send logs")
 	flag.Parse()
+
+	if cmdTopic != "" {
+		os.Setenv("T", cmdTopic)
+	}
+	if logsTopic == "" {
+		logsTopic = os.Getenv("T")
+	}
 }
 
 func main() {
+	b, executor := newExecutorBot(logsTopic)
+	b.
+		RegisterCmdFunc("ek help", func(args ...string) (string, error) {
+			return help(executor.name)
+		}).
+		RegisterCmdFunc("ek ps", func(args ...string) (string, error) {
+			return executor.ps()
+		}).
+		RegisterCmdFunc("ek attach", func(args ...string) (string, error) {
+			return executor.attach(args)
+		}).
+		RegisterCmdFunc("ek gc", func(args ...string) (string, error) {
+			return executor.gc()
+		}).
+		RegisterCmdFunc("ek kill", func(args ...string) (string, error) {
+			return executor.kill(args)
+		}).
+		RegisterCmdFunc("ek ping", func(args ...string) (string, error) {
+			return executor.exec(args)
+		}).
+		RegisterCmdFunc("ek uptime", func(args ...string) (string, error) {
+			return executor.exec(args)
+		}).
+		RegisterCmdFunc("ek", func(args ...string) (string, error) {
+			return executor.exec(args)
+		}).
+		RegisterCmdFunc("ek dps", func(args ...string) (string, error) {
+			cmd := []string{"docker", "ps", "-a", "--format", `'table{{.Names}}\t{{.Status}}'`}
+			return executor.exec(cmd)
+		}).
+		Start()
+}
+
+func newExecutorBot(logsTopic string) (*bot.Bot, *TasksExecutor) {
 	hostname, _ := os.Hostname()
+	b := bot.NewBot(fmt.Sprintf(patternBotName, hostname))
 
-	if topic != "" {
-		os.Setenv("T", topic)
-	}
-
-	botID = hostname
-	b := bot.NewBot(fmt.Sprintf("ek~bot@%s-bot2", hostname))
-
-	executor = TasksExecutor{
-		name:  b.Name,
-		pub:   b.Pub,
-		tasks: map[string]Task{},
-		lock:  sync.RWMutex{},
-	}
-
-	b.RegisterCmdFunc("ek ps", func(args ...string) (string, error) {
-		return executor.ps()
-	}).RegisterCmdFunc("ek attach", func(args ...string) (string, error) {
-		return executor.attach(args)
-	}).RegisterCmdFunc("ek gc", func(args ...string) (string, error) {
-		return executor.gc()
-	}).RegisterCmdFunc("ek dps", func(args ...string) (string, error) {
-		cmd := []string{"docker", "ps", "-a", "--format", `'table{{.Names}}\t{{.Status}}'`}
-		return executor.exec(cmd)
-	}).RegisterCmdFunc("ek", func(args ...string) (string, error) {
-		return executor.exec(args)
-	}).Start()
-}
-
-//
-
-type TasksExecutor struct {
-	name  string
-	pub   chan<- []byte
-	tasks map[string]Task
-	lock  sync.RWMutex
-	total int
-}
-
-type Task struct {
-	ID      string
-	Command string
-	State   string
-}
-
-func (e *TasksExecutor) exec(args []string) (string, error) {
-	if len(args) == 0 {
-		return "ping!", nil
-	}
-	go e.execCommand(args)
-	return "", nil
-}
-
-func (e *TasksExecutor) execCommand(args []string) {
-	taskID := fmt.Sprintf("%d", e.total)
-	e.total++
-
-	cmdArgs := ""
-	for _, arg := range args {
-		cmdArgs = cmdArgs + arg + " "
-	}
-
-	e.startTask(taskID, cmdArgs)
-
-	// Display the command to execute in a <pre> with the task id
-	e.pub <- displayCmd(taskID, e.name, cmdArgs)
-
-	log.WithField("cmd", args).Info("exec cmd")
-	cmd := exec.Command(args[0], args[1:]...)
-	stdoutReader, err := cmd.StdoutPipe()
+	q, err := client.NewClientFromEnv(b.Name)
 	if err != nil {
-		log.WithField("cmd", args[0]).WithError(err).Error("Error creating stdout pipe")
-		e.pub <- displayLine(taskID, e.name, err.Error())
-		return
+		log.Fatal(err)
 	}
-	stderrReader, err := cmd.StderrPipe()
+
+	logs, err := q.PubOn(logsTopic)
 	if err != nil {
-		log.WithField("cmd", args[0]).WithError(err).Error("Error creating stderr pipe")
-		e.pub <- displayLine(taskID, e.name, err.Error())
-		return
+		log.Fatal(err)
 	}
 
-	// Stream command execution and attach stdin/stderr to the <pre> using the task id
-	scanner := bufio.NewScanner(stdoutReader)
-	go func() {
-		for scanner.Scan() {
-			e.pub <- displayLine(taskID, e.name, scanner.Text())
-		}
-	}()
-	scannerStderr := bufio.NewScanner(stderrReader)
-	go func() {
-		for scannerStderr.Scan() {
-			e.pub <- displayLine(taskID, e.name, scannerStderr.Text())
-		}
-	}()
+	executor = NewTaskExecutor(b.Name, logs)
 
-	err = cmd.Start()
-	if err != nil {
-		log.Error(err)
-		e.markTaskInError(taskID)
-		e.pub <- displayLine(taskID, e.name, err.Error())
-		return
-	}
-	err = cmd.Wait()
-	if err != nil {
-		log.Error(err)
-		e.markTaskInError(taskID)
-		e.pub <- displayLine(taskID, e.name, err.Error())
-		return
-	}
-
-	e.markTaskAsDone(taskID)
+	return b, executor
 }
 
-func (e *TasksExecutor) gc() (string, error) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
+func help(name string) (string, error) {
+	return base64.StdEncoding.EncodeToString([]byte(`usage: ek COMMAND
+Commands:
+  cmd     Any command
 
-	ntasks := len(e.tasks)
-	e.tasks = map[string]Task{}
+  ps      List tasks
+  attach  Attach task
+  kill    Kill a task
+  gc      Kill all tasks and remove history
 
-	return fmt.Sprintf("%d tasks removed", ntasks), nil
-}
-
-func (e *TasksExecutor) startTask(taskID string, cmd string) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	e.tasks[taskID] = Task{
-		ID:      taskID,
-		Command: cmd,
-		State:   "running",
-	}
-}
-
-func (e *TasksExecutor) markTaskAsDone(taskID string) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	t := e.tasks[taskID]
-	t.State = "success"
-	e.tasks[taskID] = t
-}
-
-func (e *TasksExecutor) markTaskInError(taskID string) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	t := e.tasks[taskID]
-	t.State = "error"
-	e.tasks[taskID] = t
-}
-
-func displayCmd(taskID string, user string, argz string) []byte {
-	return []byte(fmt.Sprintf(
-		`{"user": "%s", "message":"%s", "b64":"%t"}`,
-		user,
-		`<pre id='task-`+botID+"-"+taskID+`'>&gt; `+argz+`</pre>`,
-		false))
-}
-
-func displayLine(taskID string, user string, line string) []byte {
-	return []byte(fmt.Sprintf(
-		`{"user": "%s", "message":"%s", "b64":"%t", "id":"#task-%s-%s"}`,
-		user,
-		base64.StdEncoding.EncodeToString([]byte(line)),
-		true, botID, taskID))
-}
-
-func (e *TasksExecutor) ps() (string, error) {
-	e.lock.RLock()
-	defer e.lock.RUnlock()
-
-	t := make([]string, len(e.tasks))
-	i := 0
-	for _, task := range e.tasks {
-		t[i] = fmt.Sprintf("%s (id=%s state=%s)", task.Command, task.ID, task.State)
-		i++
-	}
-
-	return strings.Join(t, ", "), nil
-}
-
-func (e *TasksExecutor) attach(args []string) (string, error) {
-	if len(args) != 2 {
-		return "missing taskID", nil
-	}
-	taskID := args[1]
-	task, is := e.tasks[taskID]
-	if !is {
-		return "task not found", nil
-	}
-	e.pub <- displayCmd(taskID, e.name, "ek attach "+task.Command)
-	return "", nil
+  dps     docker ps
+`)), nil
 }

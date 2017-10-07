@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/Sirupsen/logrus"
@@ -73,6 +74,7 @@ func (q *Qlient) CloseOnSig() {
 	<-sigc
 	logrus.Debug("Close client on sig")
 	q.Close()
+	time.Sleep(2 * time.Second)
 }
 
 // Close closes the qlient

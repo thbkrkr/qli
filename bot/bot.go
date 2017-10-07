@@ -85,6 +85,7 @@ func (b *Bot) Start() {
 		if cmd == nil {
 			cmd = b.commands[message[0]]
 		}
+
 		// skip if no command found
 		if cmd == nil {
 			log.WithField("message", message).Debug("cmd nil")
