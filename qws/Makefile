@@ -14,7 +14,7 @@ build-binary:
 		-e CGO_ENABLED=0 \
 		-e GOPATH=/go \
 		-w /go/src/github.com/thbkrkr/qli/qws \
-			golang:1.8.0 go build
+			golang:1.9.1 go build
 
 push:
 	docker push krkr/qws
