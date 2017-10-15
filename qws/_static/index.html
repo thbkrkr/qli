@@ -87,7 +87,7 @@ pre {
 <script src="https://thbkrkr.github.io/s.js/dist/s.11.ef9e3d2.zm.js"></script>
 <script>
 
-topic = $param('topic') || 'thbkrkr.miaou'
+topic = $param('topic') || 'no topic'
 skin  = $param('skin') || 'normal'
 
 document.body.innerHTML += window['skin_'+skin]()
@@ -205,25 +205,28 @@ function toggle(clazz) {
   $('.'+clazz).toggle();
 }
 
-function render_generic_event(event) {
+function renderGenericEvent(event) {
   return `<pre class="message">` + JSON.stringify(event, null, 2) + `</pre>`
 }
 
-$ws('/ws?topic='+topic,
-  function onopen() {
-    $('#send').attr('placeholder', 'Send a message...')
-    event = {user: user, message: "Hello!" }
-    ws.send(JSON.stringify(event))
-    $('.comments').append(renderUserMsgEventAsHTML({
-      user: 'hello~bot-bot',
-      message:'<i>Welcome ' + username(event.user) + '!</i>'
-    }))
-  },
-  function onclose(time) {
-    $('#send').attr('placeholder', 'Connexion lost, retry in ' + (time/1000) + ' s...')
-  },
-  onmessage
-)
+if (topic != 'no topic') {
+  $ws('/ws?topic='+topic,
+    function onopen() {
+      $('#send').attr('placeholder', 'Send a message...')
+      event = {user: user, message: "Hello!" }
+      ws.send(JSON.stringify(event))
+      $('.comments').append(renderUserMsgEventAsHTML({
+        user: 'hello~bot-bot',
+        message:'<i>Welcome ' + username(event.user) + '!</i>'
+      }))
+    },
+    function onclose(time) {
+      $('#send').attr('placeholder', 'Connexion lost, retry in ' + (time/1000) + ' s...')
+    },
+    onmessage
+  )
+}
+
 
 function onmessage(event) {
   try {
@@ -261,7 +264,7 @@ function renderEvent(event) {
   if (event.Service && event.Node && event.Status) {
     return renderServiceEventAsHTML(event)
   } else {
-    return window["render_generic_event"](event)
+    return window["renderGenericEvent"](event)
   }
 }
 
