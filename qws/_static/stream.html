@@ -32,34 +32,106 @@ body {
   padding-bottom: 0.5rem !important;
 }
 
-div.status-running,
 div.status-exec_start,
-div.status-start {
+div.status-start,
+div.status-running {
   background-color: #00BCD4;
 }
 
 div.status-exec_create,
-div.status-create {
+div.status-create,
+div.status-created {
   background-color: #cddc39;
 }
 
 div.status-stop,
-div.status-die,
-div.status-kill,
 div.status-exited {
+  background-color: #ff9800;
+}
+
+div.status-die,
+div.status-kill {
   background-color: #e91e63;
 }
 
 div.status-destroy {
-  background-color: #ff9800;
+  background-color: #f44336;
 }
 
 </style>
 
-<div class="main container"></div>
+<div id="counters" class="text container">
+ <!--  <div class="ui mini horizontal statistic">
+    <div id="statuses-total" class="value">0</div>
+    <div class="label">containers</div>
+  </div>
+  <div class="ui mini horizontal statistic">
+    <div id="statuses-running" class="value">0</div>
+    <div class="label">running</div>
+  </div>
+  <div class="ui mini horizontal statistic">
+    <div id="statuses-create" class="value">0</div>
+    <div class="label">create</div>
+  </div>
+  <div class="ui mini horizontal statistic">
+    <div id="statuses-stop" class="value">0</div>
+    <div class="label">stop</div>
+  </div>
+  <div class="ui mini horizontal statistic">
+    <div id="statuses-exited" class="value">0</div>
+    <div class="label">exited</div>
+  </div>
+  <div class="ui mini horizontal statistic">
+    <div id="statuses-kill" class="value">0</div>
+    <div class="label">kill</div>
+  </div>
+  <div class="ui mini horizontal statistic">
+    <div id="statuses-die" class="value">0</div>
+    <div class="label">die</div>
+  </div>
+  <div class="ui mini horizontal statistic">
+    <div id="statuses-destroy" class="value">0</div>
+    <div class="label">destroy</div>
+  </div> -->
+</div>
+<div id="main" class="container"></div>
 
 <script src="https://thbkrkr.github.io/s.js/dist/s.11.ef9e3d2.zm.js"></script>
 <script>
+
+var ctns = {}
+
+var counters = {
+  total: 0,
+  destroy: 0
+}
+
+function renderCounters() {
+  var c = {
+    total: counters.total,
+    create: 0,
+    start: 0,
+    running: 0,
+    stop: 0,
+    exited: 0,
+    kill: 0,
+    die: 0,
+    destroy: 0,
+    'total destroy': counters.destroy
+  }
+  for (var k in ctns) {
+    c[ctns[k]] += 1
+  }
+  stats = ''
+  for (var s in c) {
+    stats +=
+      `<div class="ui mini horizontal statistic">
+        <div id="statuses-total" class="value">${c[s]}</div>
+        <div class="label">${s}</div>
+      </div>`
+  }
+  $('#counters').html(stats)
+}
 
 $ws('/ws?topic='+($param('topic') || 'thbkrkr.miaou'),
   function onopen() {},
@@ -80,33 +152,55 @@ $ws('/ws?topic='+($param('topic') || 'thbkrkr.miaou'),
     title = `status=${status} name=${event.Name} image=${event.Image}`
     ctnElem = document.getElementById(event.ID)
 
+    if (!counters.total) counters.total = 0
+
     // Add host
     if (!hostElem) {
-      $('.main').append(`
-        <div class="host">${host} - <span id="count-${hostId}">0</span></div>
+      $('#main').append(`
+        <div class="ui mini horizontal statistic host">
+          <div class="value" id="count-${hostId}">0</div>
+          <div class="label">${host}</div>
+        </div>
         <div id="${hostId}" class="ui aligned padded grid">
         </div>`)
+
+      // Refresh host elem
+      hostElem = document.getElementById(hostId)
     }
 
-    countElem = $(`#count-${hostId}`)
+    hostCountElem = $(`#count-${hostId}`)
+    hostCount = 0
 
     // Remove destroyed ctn
     if (ctnElem && status == 'destroy') {
-      countElem.html(countElem.html()*1-1)
       $(ctnElem).remove()
+
+      counters.total--
+      counters.destroy++
+      hostCount = hostCountElem.html()*1-1
+      hostCountElem.html(hostCount)
+
+      delete ctns[event.ID]
+      renderCounters()
       return
     }
 
     // Add ctn
     if (!ctnElem) {
-      countElem.html(countElem.html()*1+1)
       $(hostElem).append(`<div id="${event.ID}"  class="${clazz}" title="${title}"></div>`)
+
+      counters.total++
+      hostCount = hostCountElem.html()*1+1
+      hostCountElem.html(hostCount)
     }
     else {
       // Update ctn
       $(ctnElem).attr('title', title)
       $(ctnElem).attr('class', clazz)
     }
+
+    ctns[event.ID] = status
+    renderCounters()
   }
 )
 
