@@ -190,13 +190,18 @@ func (e *TasksExecutor) gc() (string, error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
-	ntasks := len(e.tasks)
-
-	for _, task := range e.tasks {
-		task.stop()
+	ntasks := 0
+	newMap := map[string]*Task{}
+	for id, task := range e.tasks {
+		if task.State != "running" {
+			task.stop()
+			ntasks++
+		} else {
+			newMap[id] = task
+		}
 	}
 
-	e.tasks = map[string]*Task{}
+	e.tasks = newMap
 
 	return fmt.Sprintf("%d tasks removed", ntasks), nil
 }

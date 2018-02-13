@@ -10,9 +10,11 @@ type Task struct {
 }
 
 func (t Task) stop() error {
-	err := t.Cmd.Process.Kill()
-	if err != nil {
-		return err
+	if t.Cmd != nil && t.Cmd.Process != nil {
+		err := t.Cmd.Process.Kill()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
