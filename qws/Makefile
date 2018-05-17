@@ -2,26 +2,22 @@
 dev:
 	go run *.go
 
-all: build-binary build push
+all: build push
 
 build:
-	docker build --rm -t krkr/qws --label SHA1=$$(git rev-parse --short HEAD) .
-
-build-binary:
-	docker run --rm \
-		-v $$(pwd)/..:/go/src/github.com/thbkrkr/qli \
-		-e GOBIN=/go/bin/ \
-		-e CGO_ENABLED=0 \
-		-e GOPATH=/go \
-		-w /go/src/github.com/thbkrkr/qli/qws \
-			golang:1.9.1 go build
+	docker build --rm \
+		--label SHA1=$$(git rev-parse --short HEAD) \
+		-t krkr/qws -f Dockerfile ..
 
 push:
 	docker push krkr/qws
 
-run:
-	docker run --rm -p 80:4242 krkr/miaou \
-		-k ${KEY} -t ${TOPIC}
+#######
+
+test-qws:
+	docker run --rm -p 80:4242 \
+		-e B=${B} -e U=${U} -e P=${P} -e T=${T} \
+		krkr/qws
 
 test-send:
 	curl -XPOST localhost:4242/send -d '{"user": "matt-3", "message": "date"}'
