@@ -12,18 +12,26 @@
   <link rel="shortcut icon" type="image/png" href="/s/img/bot2.png">
   <link rel="manifest" href="/s/manifest.json">
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.7/semantic.min.css">
-
 </head><body>
 <style>
 
 body {
-  padding: 10px;
-  font-size: 0.8em;
+  padding: 15px 10px;
+  font-size: 0.7rem;
+}
+
+#main {
+  padding-top: 20px;
+}
+
+.ui.grid > .doubling.row > .column {
+  padding-top: 0.4rem !important;
+  padding-bottom: 0 !important;
 }
 
 .ctn {
-  height: 24px;
-  max-width: 24px;
+  height: 22px;
+  max-width: 22px;
   border: 1px white solid;
   background-color: #dadada;
   padding-left: 0.5rem !important;
@@ -34,14 +42,14 @@ body {
 
 div.status-exec_start,
 div.status-start,
-div.status-running {
-  background-color: #00BCD4;
-}
-
 div.status-exec_create,
 div.status-create,
 div.status-created {
   background-color: #cddc39;
+}
+
+div.status-running {
+  background-color: #00BCD4;
 }
 
 div.status-stop,
@@ -60,74 +68,49 @@ div.status-destroy {
 
 </style>
 
-<div id="counters" class="text container">
- <!--  <div class="ui mini horizontal statistic">
-    <div id="statuses-total" class="value">0</div>
-    <div class="label">containers</div>
-  </div>
-  <div class="ui mini horizontal statistic">
-    <div id="statuses-running" class="value">0</div>
-    <div class="label">running</div>
-  </div>
-  <div class="ui mini horizontal statistic">
-    <div id="statuses-create" class="value">0</div>
-    <div class="label">create</div>
-  </div>
-  <div class="ui mini horizontal statistic">
-    <div id="statuses-stop" class="value">0</div>
-    <div class="label">stop</div>
-  </div>
-  <div class="ui mini horizontal statistic">
-    <div id="statuses-exited" class="value">0</div>
-    <div class="label">exited</div>
-  </div>
-  <div class="ui mini horizontal statistic">
-    <div id="statuses-kill" class="value">0</div>
-    <div class="label">kill</div>
-  </div>
-  <div class="ui mini horizontal statistic">
-    <div id="statuses-die" class="value">0</div>
-    <div class="label">die</div>
-  </div>
-  <div class="ui mini horizontal statistic">
-    <div id="statuses-destroy" class="value">0</div>
-    <div class="label">destroy</div>
-  </div> -->
+<div class="ui grid">
+  <div id="counters" class="doubling twelve column row counters"></div>
 </div>
 <div id="main" class="container"></div>
 
 <script src="https://thbkrkr.github.io/s.js/dist/s.11.ef9e3d2.zm.js"></script>
 <script>
 
-var ctns = {}
+var containersStatuses = {}
 
-var counters = {
+var globalCounters = {
   total: 0,
   destroy: 0
 }
 
 function renderCounters() {
-  var c = {
-    total: counters.total,
+  var counters = {
+    total: globalCounters.total,
+    running: 0,
     create: 0,
     start: 0,
-    running: 0,
     stop: 0,
     exited: 0,
     kill: 0,
     die: 0,
     destroy: 0,
-    'total destroy': counters.destroy
+    'total destroy': globalCounters.destroy
   }
-  for (var k in ctns) {
-    c[ctns[k]] += 1
+  for (var id in containersStatuses) {
+    if (!counters[containersStatuses[id]]) {
+      counters[containersStatuses[id]] = 0
+    }
+    counters[containersStatuses[id]] += 1
   }
+  
   stats = ''
-  for (var s in c) {
+  for (var counter in counters) {
     stats +=
-      `<div class="ui mini horizontal statistic">
-        <div id="statuses-total" class="value">${c[s]}</div>
-        <div class="label">${s}</div>
+      `<div class="column">
+        <div class="ui mini horizontal statistic">
+        <div id="statuses-total" class="value">${counters[counter]}</div>
+        <div class="label">${counter}</div>
+        </div>
       </div>`
   }
   $('#counters').html(stats)
@@ -146,21 +129,21 @@ $ws('/ws?topic='+($param('topic') || 'thbkrkr.miaou'),
 
     host = event.Host
     hostId = host.replace(/\./g, '-')
-    hostElem = document.getElementById(hostId)
     status = event.Status.split(':')[0]
     clazz = `column ctn status-${status}`
-    title = `status=${status} name=${event.Name} image=${event.Image}`
+    description = `status=${status} name=${event.Name} image=${event.Image}`
+    hostElem = document.getElementById(hostId)
     ctnElem = document.getElementById(event.ID)
 
+    // Filter on the description
     filter = $param('filter')
     if (filter != null) {
-      console.log(title.indexOf(filter))
-      if (title.indexOf(filter) == -1) {
+      if (description.indexOf(filter) == -1) {
         return
       }
     }
 
-    if (!counters.total) counters.total = 0
+    if (!globalCounters.total) globalCounters.total = 0
 
     // Add host
     if (!hostElem) {
@@ -172,7 +155,7 @@ $ws('/ws?topic='+($param('topic') || 'thbkrkr.miaou'),
         <div id="${hostId}" class="ui aligned padded grid">
         </div>`)
 
-      // Refresh host elem
+      // Refresh hostElem 
       hostElem = document.getElementById(hostId)
     }
 
@@ -183,31 +166,31 @@ $ws('/ws?topic='+($param('topic') || 'thbkrkr.miaou'),
     if (ctnElem && status == 'destroy') {
       $(ctnElem).remove()
 
-      counters.total--
-      counters.destroy++
+      globalCounters.total--
+      globalCounters.destroy++
       hostCount = hostCountElem.html()*1-1
       hostCountElem.html(hostCount)
 
-      delete ctns[event.ID]
+      delete containersStatuses[event.ID]
       renderCounters()
       return
     }
 
     // Add ctn
     if (!ctnElem) {
-      $(hostElem).append(`<div id="${event.ID}"  class="${clazz}" title="${title}"></div>`)
+      $(hostElem).append(`<div id="${event.ID}"  class="${clazz}" title="${description}"></div>`)
 
-      counters.total++
+      globalCounters.total++
       hostCount = hostCountElem.html()*1+1
       hostCountElem.html(hostCount)
     }
     else {
       // Update ctn
-      $(ctnElem).attr('title', title)
+      $(ctnElem).attr('title', description)
       $(ctnElem).attr('class', clazz)
     }
 
-    ctns[event.ID] = status
+    containersStatuses[event.ID] = status
     renderCounters()
   }
 )
