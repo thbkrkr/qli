@@ -152,6 +152,14 @@ $ws('/ws?topic='+($param('topic') || 'thbkrkr.miaou'),
     title = `status=${status} name=${event.Name} image=${event.Image}`
     ctnElem = document.getElementById(event.ID)
 
+    filter = $param('filter')
+    if (filter != null) {
+      console.log(title.indexOf(filter))
+      if (title.indexOf(filter) == -1) {
+        return
+      }
+    }
+
     if (!counters.total) counters.total = 0
 
     // Add host
